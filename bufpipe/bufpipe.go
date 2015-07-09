@@ -8,11 +8,62 @@ package bufpipe
 import "io"
 import "sync"
 
+// There are a number of modes of operation that BufferPipe can operate in.
+//
+// As such, there are 4 different (and mostly orthoganal) flags that can be
+// bitwise ORed together to create the mode of operation. Thus, with 4 flags,
+// there are technically 16 different possible combinations (although, some of
+// them are illogical). All 16 combinations are allowed, even if no sensible
+// programmer should be using them.
+//
+// The first flag determines the buffer's structure (linear vs. ring). In linear
+// mode, a writer can only write up to the internal buffer length's worth of
+// data. On the other hand, in ring mode, the buffer is treated like a circular
+// buffer and allow indefinite reading and writing.
+//
+// The second flag determines concurrent access to the pipe (mono vs. dual).
+// In mono access mode, the writer has sole access to the pipe. Only after the
+// Close() method is called can a reader start reading data. In dual access
+// mode, readers can read written data the moment it is ready.
+//
+// The third and fourth flag determines waiting protocol for reading and writing
+// (polling vs. blocking). In blocking mode, a writer or reader will block until
+// there is available buffer space or valid data to consume. In polling mode,
+// read and write operations return immediately, possibly with an ErrShortWrite
+// or ErrNoProgress error.
+//
+// Combining Ring with Mono is an illogical combination. Mono access dictates
+// that no reader can drain the pipe until it is closed. However, the benefit
+// of a Ring buffer is that it can circularly write data as a reader consumes
+// the input. Ring with Mono is effectively Line with Mono.
+//
+// Combining Line with BlockI is an illogical combination. In Line mode, the
+// amount that can be written is fixed and independent of how much is read.
+// Thus, using BlockI in this case will cause the writer to block forever when
+// the buffer is full.
+//
+// With all illogical combinations removed, there are only 8 logical
+// combinations that programmers should use.
 const (
-	LineMonoIO = iota
-	LineDualIO
-	RingPollIO
-	RingDualIO
+	Ring   = 1 << iota // Ring buffer vs. linear buffer
+	Dual               // Dual access IO vs. mono access IO
+	BlockI             // Blocking input vs. polling input
+	BlockO             // Blocking output vs. polling output
+
+	// The below flags are the inverse of the ones above. They exist so to make
+	// it obvious what the inverse is.
+	Line  = 0 // Inverse of Ring
+	Mono  = 0 // Inverse of Dual
+	PollI = 0 // Inverse of BlockI
+	PollO = 0 // Inverse of BlockO
+)
+
+// The most common combination of flags are predefined with convenient aliases.
+const (
+	LineMono  = Line | Mono | PollI | BlockO
+	LineDual  = Line | Dual | PollI | BlockO
+	RingPoll  = Ring | Dual | PollI | PollO
+	RingBlock = Ring | Dual | BlockI | BlockO
 )
 
 type BufferPipe struct {
@@ -36,26 +87,8 @@ type BufferPipe struct {
 // noticeable. Thus, it would be more efficient to read/write data from/to the
 // internal buffer directly.
 //
-// The BufferPipe allows for several modes:
-//  * LineMonoIO: Acts like a linear buffer. A writer can produce at most as
-//    much data as the size of the internal buffer. Also, a reader is blocked
-//    on reading until the writer explicitly closes the pipe.
-//  * LineDualIO: Operates like the previous mode, but only blocks readers until
-//    there is at least some data.
-//  * RingPollIO: Operates in a similar fashion as io.Pipe, but never blocks on
-//    either the sending or receiving side. Clients must rely on polling.
-//  * RingDualIO: Operates in a similar fashion as io.Pipe. Both reading or
-//    writing blocks until ready.
+// See the defined constants for more on the buffer mode of operation.
 func NewBufferPipe(buf []byte, mode int) *BufferPipe {
-	switch mode {
-	case LineMonoIO, LineDualIO, RingPollIO, RingDualIO:
-	default:
-		panic("unknown buffer IO mode")
-	}
-	if len(buf) == 0 {
-		panic("buffer may not be empty")
-	}
-
 	b := new(BufferPipe)
 	b.buf = buf
 	b.mode = mode
@@ -92,25 +125,23 @@ func (b *BufferPipe) GetOffsets() (rdCnt, wrCnt int64) {
 }
 
 func (b *BufferPipe) writeWait() int {
-	var offLo int64
-	switch b.mode {
-	case LineMonoIO, LineDualIO:
-		// This never blocks on write.
-		offLo = 0
-	case RingPollIO:
-		// This never blocks on write.
-		offLo = b.rdCnt
-	case RingDualIO:
-		// This blocks until buffer is available.
-		for !b.closed && len(b.buf) == int(b.wrCnt-b.rdCnt) {
+	var rdZero int64 // Zero value
+	isLine := b.mode & Ring == 0
+	isBlock := b.mode & BlockI > 0
+
+	rdCnt := &b.rdCnt
+	if isLine {
+		rdCnt = &rdZero // Amount read has no effect on amount available
+	}
+	if isBlock {
+		for !b.closed && len(b.buf) == int(b.wrCnt-(*rdCnt)) {
 			b.wrCond.Wait()
 		}
-		offLo = b.rdCnt
 	}
 	if b.closed {
 		return 0 // Closed buffer is never available
 	}
-	return len(b.buf) - int(b.wrCnt-offLo)
+	return len(b.buf) - int(b.wrCnt-(*rdCnt))
 }
 
 // Slice of available buffer that can be written to. This does not advance the
@@ -119,16 +150,17 @@ func (b *BufferPipe) writeWait() int {
 // In linear buffers, the slice obtained is guaranteed to be the entire
 // available writable buffer slice.
 //
-// In LineMonoIO mode only, slices obtained may still be modified even after
+// In LineMono mode only, slices obtained may still be modified even after
 // WriteMark() has been called and before Close(). This is valid because this
 // mode blocks readers until the buffer has been closed.
 //
 // In ring buffers, the slice obtained may not represent all of the available
 // buffer space since this method always returns contiguous pieces of memory.
+// It is guaranteed to return a non-empty slice if space is available.
 //
-// In the RingDualIO mode only, this method blocks until there is available
-// space in the buffer to write. Other modes do not block and will return 0 if
-// the buffer is full.
+// In the RingBlock mode, this method blocks until there is available space in
+// the buffer to write. Other modes do not block and will return an empty slice
+// if the buffer is full.
 func (b *BufferPipe) WriteSlice() ([]byte, error) {
 	if b == nil {
 		return nil, nil
@@ -145,9 +177,9 @@ func (b *BufferPipe) writeSlice() ([]byte, error) {
 	if offHi > len(b.buf) { // If available slice is split, take bottom
 		offHi = len(b.buf)
 	}
-	buf := b.buf[offLo:offHi] // Linear and ring buffers
+	buf := b.buf[offLo:offHi]
 
-	// Check erorr status.
+	// Check erorr status
 	if len(buf) == 0 {
 		if b.closed {
 			return buf, io.ErrClosedPipe
@@ -230,19 +262,18 @@ func (b *BufferPipe) ReadFrom(rd io.Reader) (cnt int64, err error) {
 }
 
 func (b *BufferPipe) readWait() int {
-	switch b.mode {
-	case LineMonoIO:
-		// Block until buffer is closed.
-		for !b.closed {
-			b.rdCond.Wait()
-		}
-	case LineDualIO, RingDualIO:
-		// Block until data ready.
+	isBlock := b.mode & BlockO > 0
+	isMono := b.mode & Dual == 0
+	if isBlock {
 		for !b.closed && b.rdCnt == b.wrCnt {
 			b.rdCond.Wait()
 		}
-	case RingPollIO:
-		// This never blocks on read.
+		for isMono && !b.closed {
+			b.rdCond.Wait()
+		}
+	}
+	if isMono && !b.closed {
+		return 0
 	}
 	return int(b.wrCnt - b.rdCnt)
 }
@@ -254,10 +285,11 @@ func (b *BufferPipe) readWait() int {
 // valid readable buffer slice.
 //
 // In ring buffers, the slice obtained may not represent all of the valid buffer
-// data since this method always returns contiguous pieces of memory.
+// data since this method always returns contiguous pieces of memory. It is
+// guaranteed to return a non-empty slice if valid data is available.
 //
 // In all modes, this method blocks until there is some valid data to read.
-// The LineMonoIO mode is special in that it will block until the buffer has
+// The LineMono mode is special in that it will block until the buffer has
 // been closed. Other modes just block until some data is available.
 func (b *BufferPipe) ReadSlice() ([]byte, error) {
 	if b == nil {
@@ -378,6 +410,9 @@ func (b *BufferPipe) Close() error {
 }
 
 // Makes the buffer ready for use again.
+//
+// Resetting when readers or writers are still using the pipe results in
+// undefined behavior.
 func (b *BufferPipe) Reset() {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()

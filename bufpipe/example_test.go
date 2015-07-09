@@ -27,7 +27,7 @@ func randomChars(cnt int, rand *rand.Rand) []byte {
 
 func ExampleLineMonoPipe() {
 	// The buffer is large enough such that the producer doesn't overfill it.
-	buffer := bufpipe.NewBufferPipe(make([]byte, 4096), bufpipe.LineMonoIO)
+	buffer := bufpipe.NewBufferPipe(make([]byte, 4096), bufpipe.LineMono)
 
 	rand := rand.New(rand.NewSource(0))
 	group := new(sync.WaitGroup)
@@ -38,7 +38,7 @@ func ExampleLineMonoPipe() {
 		defer group.Done()
 		defer buffer.Close()
 
-		// In LineMonoIO mode only, it is safe to store a reference to written
+		// In LineMono mode only, it is safe to store a reference to written
 		// data and modify later.
 		header, err := buffer.WriteSlice()
 		if err != nil {
@@ -66,7 +66,7 @@ func ExampleLineMonoPipe() {
 	go func() {
 		defer group.Done()
 
-		// In LineMonoIO mode only, a call to ReadSlice() is guaranteed to block
+		// In LineMono mode only, a call to ReadSlice() is guaranteed to block
 		// until the channel is closed. All written data will be made available.
 		data, _ := buffer.ReadSlice()
 		buffer.ReadMark(len(data)) // Technically, this is optional
@@ -79,7 +79,7 @@ func ExampleLineMonoPipe() {
 
 func ExampleLineDualPipe() {
 	// The buffer is large enough such that the producer doesn't overfill it.
-	buffer := bufpipe.NewBufferPipe(make([]byte, 4096), bufpipe.LineDualIO)
+	buffer := bufpipe.NewBufferPipe(make([]byte, 4096), bufpipe.LineDual)
 
 	rand := rand.New(rand.NewSource(0))
 	group := new(sync.WaitGroup)
@@ -125,7 +125,7 @@ func ExampleLineDualPipe() {
 func ExampleRingDualPipe() {
 	// Intentionally small buffer to show that data written into the buffer
 	// can exceed the size of the buffer itself.
-	buffer := bufpipe.NewBufferPipe(make([]byte, 128), bufpipe.RingDualIO)
+	buffer := bufpipe.NewBufferPipe(make([]byte, 128), bufpipe.RingBlock)
 
 	rand := rand.New(rand.NewSource(0))
 	group := new(sync.WaitGroup)
