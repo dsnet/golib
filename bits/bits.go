@@ -9,10 +9,13 @@ import "unsafe"
 import "bitbucket.org/rawr/golib/errs"
 
 const (
-	MaxUint     = ^uint(0)
+	MinUint     = uint(0)
+	MaxUint     = ^MinUint
 	NumUintBits = int(8 * unsafe.Sizeof(uint(0)))
 )
 
+// ErrAlign is returned if the function called cannot perform the requested
+// operation because the internal offset is not aligned to a byte-boundary.
 var ErrAlign = errs.New("golib/bits: offset is not byte-aligned")
 
 type BitReader interface {
@@ -21,11 +24,18 @@ type BitReader interface {
 	ReadBit() (val bool, err error)
 }
 
-type BitCountReader interface {
+type BitsReader interface {
 	BitReader
 
-	// Total number of bits read.
-	BitsRead() int64
+	// Read num bits in LSB order. That is, the first bits read are packed into
+	// val as the LSB. The behavior is undefined if a read is attempted on more
+	// bits than fits in an uint.
+	//
+	// If an error is encountered while reading a bit, then an error will be
+	// returned along with the number of bits read thus far. The error returned
+	// will be io.EOF only if the cnt is 0. Otherwise, io.ErrUnexpectedEOF will
+	// be used. This is done to match the behavior of io.ReadFull.
+	ReadBits(num int) (val uint, cnt int, err error)
 }
 
 type BitWriter interface {
@@ -34,9 +44,14 @@ type BitWriter interface {
 	WriteBit(bool) error
 }
 
-type BitCountWriter interface {
+type BitsWriter interface {
 	BitWriter
 
-	// Total number of bits written.
-	BitsWritten() int64
+	// Write num bits in LSB order. That is, the LSB bits of val will be the
+	// first bits to be written. The behavior is undefined if a read is
+	// attempted on more bits than fits in an uint.
+	//
+	// If an error is encountered while writing a bit, then an error will be
+	// returned along with the number of bits written thus far.
+	WriteBits(val uint, num int) (cnt int, err error)
 }
