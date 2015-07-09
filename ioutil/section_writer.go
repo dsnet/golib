@@ -5,26 +5,60 @@
 package ioutil
 
 import "io"
+import "os"
+import "errors"
 
 type SectionWriter struct {
+	wr    io.WriterAt
+	off   int64
+	offLo int64
+	offHi int64
 }
 
-func NewSectionWriter(rd io.ReaderAt, off int64, cnt int64) *SectionWriter {
-	return nil
+func NewSectionWriter(wr io.WriterAt, off int64, cnt int64) *SectionWriter {
+	return &SectionWriter{wr, off, off, off + cnt}
 }
 
 func (s *SectionWriter) Write(data []byte) (cnt int, err error) {
-	return 0, nil
+	cnt, err = s.WriteAt(data, s.off-s.offLo)
+	s.off += int64(cnt)
+	return
 }
 
 func (s *SectionWriter) WriteAt(data []byte, off int64) (cnt int, err error) {
-	return 0, nil
+	off += s.offLo
+	if off < s.offLo {
+		return 0, errors.New("ioutil.SectionWriter.WriteAt: invalid argument")
+	}
+	if off > s.offHi {
+		off = s.offHi
+	}
+	cnt = int(s.offHi - off)
+	cnt, err = s.wr.WriteAt(data[:cnt], off)
+	if err == nil && cnt < len(data) {
+		err = io.ErrShortWrite
+	}
+	return
 }
 
 func (s *SectionWriter) Seek(offset int64, whence int) (pos int64, err error) {
-	return 0, nil
+	switch whence {
+	case os.SEEK_SET:
+		pos = offset + s.offLo
+	case os.SEEK_CUR:
+		pos = offset + s.off
+	case os.SEEK_END:
+		pos = offset + s.offHi
+	default:
+		return 0, errors.New("ioutil.SectionWriter.Seek: invalid whence")
+	}
+	if pos < s.offLo {
+		return 0, errors.New("ioutil.SectionWriter.Seek: invalid offset")
+	}
+	s.off = pos
+	return pos - s.offLo, nil
 }
 
 func (s *SectionWriter) Size() int64 {
-	return 0
+	return s.offHi - s.offLo
 }
