@@ -56,7 +56,7 @@ func Example_lineMono() {
 			data := randomChars(rand.Intn(64), rand) + "\n"
 
 			// So long as the amount of data written has not exceeded the size
-			// of the buffer, Write() will never fail.
+			// of the buffer, Write will never fail.
 			cnt, err := buffer.Write([]byte(data))
 			totalCnt += cnt
 			if err == io.ErrShortWrite {
@@ -74,7 +74,7 @@ func Example_lineMono() {
 	go func() {
 		defer group.Done()
 
-		// In LineMono mode only, a call to ReadSlices() is guaranteed to block
+		// In LineMono mode only, a call to ReadSlices is guaranteed to block
 		// until the channel is closed. All written data will be made available.
 		data, _, _ := buffer.ReadSlices()
 		buffer.ReadMark(len(data)) // Technically, this is optional
@@ -115,7 +115,7 @@ func Example_lineDual() {
 			data := randomChars(rand.Intn(64), rand) + "\n"
 
 			// So long as the amount of data written has not exceeded the size
-			// of the buffer, Write() will never fail.
+			// of the buffer, Write will never fail.
 			if _, err := buffer.Write([]byte(data)); err == io.ErrShortWrite {
 				break
 			}
@@ -128,7 +128,7 @@ func Example_lineDual() {
 	go func() {
 		defer group.Done()
 		for {
-			// Reading can be also done using ReadSlices() and ReadMark() pairs.
+			// Reading can be also done using ReadSlices and ReadMark pairs.
 			data, _, err := buffer.ReadSlices()
 			if err == io.EOF {
 				break
@@ -174,7 +174,7 @@ func Example_ringBlock() {
 			data := randomChars(rand.Intn(64), rand) + "\n"
 
 			// So long as the amount of data written has not exceeded the size
-			// of the buffer, Write() will never fail.
+			// of the buffer, Write will never fail.
 			buffer.Write([]byte(data))
 
 			time.Sleep(100 * time.Millisecond)
@@ -187,7 +187,7 @@ func Example_ringBlock() {
 
 		data := make([]byte, 64)
 		for {
-			// Reading can also be done using the Read() method.
+			// Reading can also be done using the Read method.
 			cnt, err := buffer.Read(data)
 			fmt.Print(string(data[:cnt]))
 			if err == io.EOF {

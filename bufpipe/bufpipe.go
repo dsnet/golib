@@ -23,7 +23,7 @@ import "sync"
 //
 // The second flag determines concurrent access to the pipe (mono vs. dual).
 // In mono access mode, the writer has sole access to the pipe. Only after the
-// Close() method is called can a reader start reading data. In dual access
+// Close method is called can a reader start reading data. In dual access
 // mode, readers can read written data the moment it is ready.
 //
 // The third and fourth flag determines waiting protocol for reading and writing
@@ -155,8 +155,8 @@ func (b *BufferPipe) writeWait() int {
 // available writable buffer slice.
 //
 // In LineMono mode only, slices obtained may still be modified even after
-// WriteMark() has been called and before Close(). This is valid because this
-// mode blocks readers until the buffer has been closed.
+// WriteMark has been called and before Close. This is valid because this mode
+// blocks readers until the buffer has been closed.
 //
 // In ring buffers, the first slice obtained may not represent all of the
 // available buffer space since slices always represent a contiguous pieces of
@@ -202,11 +202,11 @@ func (b *BufferPipe) writeSlices() (bufLo, bufHi []byte, err error) {
 // Advances the write pointer.
 //
 // The amount that can be advanced must be non-negative and be less than the
-// length of the slices returned by the previous WriteSlices(). Calls to Write()
-// may not be done between these two calls. Also, another call to WriteMark()
-// is invalid until WriteSlices() has been called again.
+// length of the slices returned by the previous WriteSlices. Calls to Write
+// may not be done between these two calls. Also, another call to WriteMark is
+// invalid until WriteSlices has been called again.
 //
-// If WriteMark() is being used, only one writer routine is allowed.
+// If WriteMark is being used, only one writer routine is allowed.
 func (b *BufferPipe) WriteMark(cnt int) {
 	if b == nil && cnt == 0 {
 		return
@@ -341,11 +341,11 @@ func (b *BufferPipe) readSlices() (bufLo, bufHi []byte, err error) {
 // Advances the read pointer.
 //
 // The amount that can be advanced must be non-negative and be less than the
-// length of the slices returned by the previous ReadSlices(). Calls to Read()
-// may not be done between these two calls. Also, another call to ReadMark() is
-// invalid until ReadSlices() has been called again.
+// length of the slices returned by the previous ReadSlices. Calls to Read
+// may not be done between these two calls. Also, another call to ReadMark is
+// invalid until ReadSlices has been called again.
 //
-// If ReadMark() is being used, only one reader routine is allowed.
+// If ReadMark is being used, only one reader routine is allowed.
 func (b *BufferPipe) ReadMark(cnt int) {
 	if b == nil && cnt == 0 {
 		return
