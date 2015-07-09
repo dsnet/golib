@@ -11,6 +11,7 @@ import "sync"
 const (
 	LineMonoIO = iota
 	LineDualIO
+	RingPollIO
 	RingDualIO
 )
 
@@ -41,10 +42,13 @@ type BufferPipe struct {
 //    on reading until the writer explicitly closes the pipe.
 //  * LineDualIO: Operates like the previous mode, but only blocks readers until
 //    there is at least some data.
-//  * RingDualIO: Operates in a similar fashion as io.Pipe.
+//  * RingPollIO: Operates in a similar fashion as io.Pipe, but never blocks on
+//    either the sending or receiving side. Clients must rely on polling.
+//  * RingDualIO: Operates in a similar fashion as io.Pipe. Both reading or
+//    writing blocks until ready.
 func NewBufferPipe(buf []byte, mode int) *BufferPipe {
 	switch mode {
-	case LineMonoIO, LineDualIO, RingDualIO:
+	case LineMonoIO, LineDualIO, RingPollIO, RingDualIO:
 	default:
 		panic("unknown buffer IO mode")
 	}
@@ -61,8 +65,13 @@ func NewBufferPipe(buf []byte, mode int) *BufferPipe {
 }
 
 // The entire internal buffer. Be careful when touching the raw buffer.
-func (b *BufferPipe) Buffer() []byte {
+func (b *BufferPipe) GetBuffer() []byte {
 	return b.buf
+}
+
+// The BufferPipe mode of operation.
+func (b *BufferPipe) GetMode() int {
+	return b.mode
 }
 
 // The total number of bytes the buffer can store.
@@ -77,9 +86,22 @@ func (b *BufferPipe) Length() int {
 	return int(b.wrCnt - b.rdCnt)
 }
 
+// The internal pointer values.
+func (b *BufferPipe) GetOffsets() (rdCnt, wrCnt int64) {
+	return b.rdCnt, b.wrCnt
+}
+
 func (b *BufferPipe) writeWait() int {
-	var offLo int64 // For Linear buffer, this is always zero
-	if b.mode == RingDualIO {
+	var offLo int64
+	switch b.mode {
+	case LineMonoIO, LineDualIO:
+		// This never blocks on write.
+		offLo = 0
+	case RingPollIO:
+		// This never blocks on write.
+		offLo = b.rdCnt
+	case RingDualIO:
+		// This blocks until buffer is available.
 		for !b.closed && len(b.buf) == int(b.wrCnt-b.rdCnt) {
 			b.wrCond.Wait()
 		}
@@ -107,20 +129,33 @@ func (b *BufferPipe) writeWait() int {
 // In the RingDualIO mode only, this method blocks until there is available
 // space in the buffer to write. Other modes do not block and will return 0 if
 // the buffer is full.
-func (b *BufferPipe) WriteSlice() []byte {
+func (b *BufferPipe) WriteSlice() ([]byte, error) {
+	if b == nil {
+		return nil, nil
+	}
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 	return b.writeSlice()
 }
 
-func (b *BufferPipe) writeSlice() []byte {
+func (b *BufferPipe) writeSlice() ([]byte, error) {
 	availCnt := b.writeWait() // Block until there is available buffer
 	offLo := int(b.wrCnt) % len(b.buf)
 	offHi := offLo + availCnt
 	if offHi > len(b.buf) { // If available slice is split, take bottom
 		offHi = len(b.buf)
 	}
-	return b.buf[offLo:offHi] // Linear and ring buffers
+	buf := b.buf[offLo:offHi] // Linear and ring buffers
+
+	// Check erorr status.
+	if len(buf) == 0 {
+		if b.closed {
+			return buf, io.ErrClosedPipe
+		} else {
+			return buf, io.ErrShortWrite
+		}
+	}
+	return buf, nil
 }
 
 // Advances the write pointer.
@@ -132,6 +167,9 @@ func (b *BufferPipe) writeSlice() []byte {
 //
 // If WriteMark() is being used, only one writer routine is allowed.
 func (b *BufferPipe) WriteMark(cnt int) {
+	if b == nil && cnt == 0 {
+		return
+	}
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 	b.writeMark(cnt)
@@ -160,13 +198,9 @@ func (b *BufferPipe) Write(data []byte) (cnt int, err error) {
 	defer b.mutex.Unlock()
 
 	for cnt < len(data) {
-		buf := b.writeSlice()
-		if len(buf) == 0 {
-			if b.closed {
-				return cnt, io.ErrClosedPipe
-			} else {
-				return cnt, io.ErrShortWrite
-			}
+		buf, err := b.writeSlice()
+		if err != nil {
+			return cnt, err
 		}
 
 		copyCnt := copy(buf, data[cnt:])
@@ -176,9 +210,39 @@ func (b *BufferPipe) Write(data []byte) (cnt int, err error) {
 	return cnt, nil
 }
 
+// Continually read the contents of the reader and write them to the pipe.
+func (b *BufferPipe) ReadFrom(rd io.Reader) (cnt int64, err error) {
+	for {
+		data, wrErr := b.WriteSlice()
+		rdCnt, rdErr := rd.Read(data)
+		b.WriteMark(rdCnt)
+		cnt += int64(rdCnt)
+
+		switch {
+		case wrErr != nil:
+			return cnt, wrErr
+		case rdErr == io.EOF:
+			return cnt, nil
+		case rdErr != nil:
+			return cnt, rdErr
+		}
+	}
+}
+
 func (b *BufferPipe) readWait() int {
-	for !b.closed && (b.rdCnt == b.wrCnt || b.mode == LineMonoIO) {
-		b.rdCond.Wait()
+	switch b.mode {
+	case LineMonoIO:
+		// Block until buffer is closed.
+		for !b.closed {
+			b.rdCond.Wait()
+		}
+	case LineDualIO, RingDualIO:
+		// Block until data ready.
+		for !b.closed && b.rdCnt == b.wrCnt {
+			b.rdCond.Wait()
+		}
+	case RingPollIO:
+		// This never blocks on read.
 	}
 	return int(b.wrCnt - b.rdCnt)
 }
@@ -195,20 +259,33 @@ func (b *BufferPipe) readWait() int {
 // In all modes, this method blocks until there is some valid data to read.
 // The LineMonoIO mode is special in that it will block until the buffer has
 // been closed. Other modes just block until some data is available.
-func (b *BufferPipe) ReadSlice() []byte {
+func (b *BufferPipe) ReadSlice() ([]byte, error) {
+	if b == nil {
+		return nil, nil
+	}
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 	return b.readSlice()
 }
 
-func (b *BufferPipe) readSlice() []byte {
+func (b *BufferPipe) readSlice() ([]byte, error) {
 	validCnt := b.readWait() // Block until there is valid buffer
 	offLo := int(b.rdCnt) % len(b.buf)
 	offHi := offLo + validCnt
 	if offHi > len(b.buf) { // If valid slice is split, take bottom
 		offHi = len(b.buf)
 	}
-	return b.buf[offLo:offHi] // Linear and ring buffers
+	buf := b.buf[offLo:offHi] // Linear and ring buffers
+
+	// Check erorr status.
+	if len(buf) == 0 {
+		if b.closed {
+			return buf, io.EOF
+		} else {
+			return buf, io.ErrNoProgress
+		}
+	}
+	return buf, nil
 }
 
 // Advances the read pointer.
@@ -220,6 +297,9 @@ func (b *BufferPipe) readSlice() []byte {
 //
 // If ReadMark() is being used, only one writer routine is allowed.
 func (b *BufferPipe) ReadMark(cnt int) {
+	if b == nil && cnt == 0 {
+		return
+	}
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 	b.readMark(cnt)
@@ -246,9 +326,9 @@ func (b *BufferPipe) Read(data []byte) (cnt int, err error) {
 	defer b.mutex.Unlock()
 
 	for cnt < len(data) {
-		buf := b.readSlice()
-		if len(buf) == 0 {
-			return cnt, io.EOF
+		buf, err := b.readSlice()
+		if err != nil {
+			return cnt, err
 		}
 
 		copyCnt := copy(data[cnt:], buf)
@@ -256,6 +336,25 @@ func (b *BufferPipe) Read(data []byte) (cnt int, err error) {
 		cnt += copyCnt
 	}
 	return cnt, nil
+}
+
+// Continually read the contents of the pipe and write them to the writer.
+func (b *BufferPipe) WriteTo(wr io.Writer) (cnt int64, err error) {
+	for {
+		data, rdErr := b.ReadSlice()
+		wrCnt, wrErr := wr.Write(data)
+		b.ReadMark(wrCnt)
+		cnt += int64(wrCnt)
+
+		switch {
+		case wrErr != nil:
+			return cnt, wrErr
+		case rdErr == io.EOF:
+			return cnt, nil
+		case rdErr != nil:
+			return cnt, rdErr
+		}
+	}
 }
 
 // Close the buffer down.

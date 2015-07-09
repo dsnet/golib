@@ -40,7 +40,10 @@ func ExampleLineMonoPipe() {
 
 		// In LineMonoIO mode only, it is safe to store a reference to written
 		// data and modify later.
-		header := buffer.WriteSlice()[:4]
+		header, err := buffer.WriteSlice()
+		if err != nil {
+			panic(err)
+		}
 
 		totalCnt := 0
 		buffer.Write([]byte("#### "))
@@ -56,7 +59,7 @@ func ExampleLineMonoPipe() {
 		}
 
 		// Write the header afterwards
-		copy(header, fmt.Sprintf("%04d", totalCnt))
+		copy(header[:4], fmt.Sprintf("%04d", totalCnt))
 	}()
 
 	// Consumer routine.
@@ -65,7 +68,7 @@ func ExampleLineMonoPipe() {
 
 		// In LineMonoIO mode only, a call to ReadSlice() is guaranteed to block
 		// until the channel is closed. All written data will be made available.
-		data := buffer.ReadSlice()
+		data, _ := buffer.ReadSlice()
 		buffer.ReadMark(len(data)) // Technically, this is optional
 
 		fmt.Println(string(data))
@@ -104,9 +107,11 @@ func ExampleLineDualPipe() {
 		defer group.Done()
 		for {
 			// Reading can be also done using ReadSlice() and ReadMark() pairs.
-			data := buffer.ReadSlice()
-			if len(data) == 0 {
+			data, err := buffer.ReadSlice()
+			if err == io.EOF {
 				break
+			} else if err != nil {
+				panic(err)
 			}
 			buffer.ReadMark(len(data))
 			fmt.Print(string(data))
