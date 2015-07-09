@@ -27,10 +27,10 @@ func randomChars(cnt int, rand *rand.Rand) string {
 }
 
 // In LineMono mode, the consumer cannot see the written data until the pipe is
-// closed. Thus, it is possible to go back to the front of the pipe and record
-// the total number of bytes written out. This functionality is useful in cases
-// where a file format's header contains information that is dependent on what
-// is eventually written.
+// closed. Thus, it is possible for the producer to go back to the front of the
+// pipe and record the total number of bytes written out. This functionality is
+// useful in cases where a file format's header contains information that is
+// dependent on what is eventually written.
 func Example_lineMono() {
 	// The buffer is small enough such that the producer does hit the limit.
 	buffer := bufpipe.NewBufferPipe(make([]byte, 256), bufpipe.LineMono)
