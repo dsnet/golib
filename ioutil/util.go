@@ -13,7 +13,7 @@ import "bitbucket.org/rawr/golib/errs"
 // offsets are no larger than int64, there is an upper limit of 64 iterations
 // before the EOF is found.
 func ReaderAtSize(rd io.ReaderAt) (pos int64, err error) {
-	errs.Recover(&err)
+	defer errs.Recover(&err)
 
 	// Function to check if the given position is at EOF
 	buf := make([]byte, 2)
