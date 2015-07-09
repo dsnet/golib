@@ -6,12 +6,12 @@ package ioutil
 
 import "io"
 
-// The UndoReader allows a client to unread data back writing data to an
+// The UndoReader allows a client to unread data by inserting data to an
 // internal stack. Reads will pop data from the internal stack before reading
 // from the underlying reader.
 //
-// The UndoReader provides similar functionality as the UndoReader, but is more
-// complex. It solves certain cases where UndoReader is not sufficient.
+// The UndoReader provides similar functionality as the MemoryReader, but is
+// simpler. Use the UndoReader if it satisfies the given use case.
 type UndoReader struct {
 	rd  io.Reader
 	buf []byte // Reverse stack, which grows starting from the end
