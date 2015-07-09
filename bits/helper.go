@@ -6,6 +6,26 @@ package bits
 
 import "io"
 
+// Lookup table that match each byte to the number of one bits in that byte.
+var cntOnes = [256]byte{
+	0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+	2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+	3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+	4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8,
+}
+
 // Convert boolean false to 0 and true to 1.
 func Btoi(b bool) uint {
 	if b {
@@ -72,22 +92,33 @@ func SetN(data []byte, val uint, cnt, ofs int) {
 	}
 }
 
-// Count the number of zero bits and one bits in the slice.
-func Count(data []byte) (zeros, ones int) {
-	for _, val := range data {
-		for idx := 0; idx < 8 && val > 0; idx++ {
-			ones += int(val & 1)
-			val >>= 1
-		}
-	}
-	return 8*len(data) - ones, ones
-}
-
 // Invert all bits in the slice.
 func Invert(data []byte) {
 	for idx := range data {
 		data[idx] ^= 0xff
 	}
+}
+
+// Count the number of one bits in the slice.
+func Count(data []byte) (ones int) {
+	for _, val := range data {
+		ones += int(cntOnes[val])
+	}
+	return ones
+}
+
+// Count the number of one bits in the byte.
+func CountByte(val byte) (ones int) {
+	return int(cntOnes[val])
+}
+
+// Count the number of one bits in the uint.
+func CountUint(val uint) (ones int) {
+	for val > 0 {
+		ones += int(cntOnes[val&0xff])
+		val >>= 8
+	}
+	return ones
 }
 
 // Reverse the bits of val.

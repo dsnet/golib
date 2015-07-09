@@ -135,30 +135,6 @@ func TestSetN(t *testing.T) {
 	assert.Equal(t, []byte{0x05, 0x5c, 0xeb, 0x4d}, b)
 }
 
-func TestCount(t *testing.T) {
-	var zeros, ones int
-
-	zeros, ones = Count(nil)
-	assert.Equal(t, 0, zeros)
-	assert.Equal(t, 0, ones)
-
-	zeros, ones = Count([]byte{0xaa})
-	assert.Equal(t, 4, zeros)
-	assert.Equal(t, 4, ones)
-
-	zeros, ones = Count([]byte{0x7b})
-	assert.Equal(t, 2, zeros)
-	assert.Equal(t, 6, ones)
-
-	zeros, ones = Count([]byte{0xf3, 0xd1})
-	assert.Equal(t, 6, zeros)
-	assert.Equal(t, 10, ones)
-
-	zeros, ones = Count([]byte{0xff, 0xff, 0xff})
-	assert.Equal(t, 0, zeros)
-	assert.Equal(t, 24, ones)
-}
-
 func TestInvert(t *testing.T) {
 	var b []byte
 
@@ -181,6 +157,39 @@ func TestInvert(t *testing.T) {
 	b = []byte{0xff, 0xff, 0xff}
 	Invert(b)
 	assert.Equal(t, []byte{0x00, 0x00, 0x00}, b)
+}
+
+func TestCount(t *testing.T) {
+	assert.Equal(t, 0, Count(nil))
+	assert.Equal(t, 4, Count([]byte{0xaa}))
+	assert.Equal(t, 6, Count([]byte{0x7b}))
+	assert.Equal(t, 10, Count([]byte{0xf3, 0xd1}))
+	assert.Equal(t, 24, Count([]byte{0xff, 0xff, 0xff}))
+}
+
+func TestCountByte(t *testing.T) {
+	assert.Equal(t, 0, CountByte(0x00))
+	assert.Equal(t, 3, CountByte(0x13))
+	assert.Equal(t, 4, CountByte(0xf0))
+	assert.Equal(t, 4, CountByte(0x0f))
+	assert.Equal(t, 4, CountByte(0xaa))
+	assert.Equal(t, 6, CountByte(0x7e))
+	assert.Equal(t, 8, CountByte(0xff))
+}
+
+func TestCountUint(t *testing.T) {
+	assert.Equal(t, 0, CountUint(0x0))
+	assert.Equal(t, 2, CountUint(0x3))
+	assert.Equal(t, 3, CountUint(0xe))
+	assert.Equal(t, 5, CountUint(0x3d))
+	assert.Equal(t, 8, CountUint(0xff))
+	assert.Equal(t, 6, CountUint(0xa8d))
+	assert.Equal(t, 10, CountUint(0x7fe))
+	assert.Equal(t, 10, CountUint(0xa8df))
+	assert.Equal(t, 16, CountUint(0xffff))
+	assert.Equal(t, NumUintBits-2, CountUint(MaxUint>>2))
+	assert.Equal(t, NumUintBits-1, CountUint(MaxUint>>1))
+	assert.Equal(t, NumUintBits, CountUint(MaxUint))
 }
 
 func TestReverseUint(t *testing.T) {
