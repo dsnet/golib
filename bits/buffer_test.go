@@ -46,7 +46,7 @@ func TestBuffer(t *testing.T) {
 	assert.Equal(t, X{false, false, 1, 1, []byte{0x01}}, state(bb))
 
 	_, err = bb.ReadBit()
-	assert.Equal(t, io.EOF, err)
+	assert.Equal(t, err, io.EOF)
 	assert.Equal(t, X{false, false, 1, 1, []byte{0x01}}, state(bb))
 
 	err = bb.WriteBit(true)
@@ -191,12 +191,14 @@ func TestBuffer(t *testing.T) {
 
 func BenchmarkBufferWriter(b *testing.B) {
 	cnt := 1 << 20 // 1 MiB
-	bb := NewBuffer(nil)
+	bb := NewBuffer(make([]byte, 0, cnt))
 
+	b.ReportAllocs()
 	b.SetBytes(int64(cnt))
 	b.ResetTimer()
 
 	for ni := 0; ni < b.N; ni++ {
+		bb.Reset()
 		for bi := 0; bi < cnt; bi++ {
 			bb.WriteBit(true)
 			bb.WriteBit(false)
@@ -218,10 +220,12 @@ func BenchmarkBufferReader(b *testing.B) {
 	}
 	bb := NewBuffer(data)
 
+	b.ReportAllocs()
 	b.SetBytes(int64(cnt))
 	b.ResetTimer()
 
 	for ni := 0; ni < b.N; ni++ {
+		bb.ResetData(data)
 		for bi := 0; bi < cnt; bi++ {
 			bb.ReadBit()
 			bb.ReadBit()

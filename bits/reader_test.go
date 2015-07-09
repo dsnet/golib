@@ -112,13 +112,16 @@ func BenchmarkReader(b *testing.B) {
 	for i := range data {
 		data[i] = 0x55
 	}
-	buf := bytes.NewBuffer(data)
+	buf := NewBuffer(data)
 	br := NewReader(buf)
 
+	b.ReportAllocs()
 	b.SetBytes(int64(cnt))
 	b.ResetTimer()
 
 	for ni := 0; ni < b.N; ni++ {
+		buf.ResetData(data)
+		br.Reset(buf)
 		for bi := 0; bi < cnt; bi++ {
 			br.ReadBit()
 			br.ReadBit()

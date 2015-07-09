@@ -102,13 +102,16 @@ func TestWriter(t *testing.T) {
 
 func BenchmarkWriter(b *testing.B) {
 	cnt := 1 << 20 // 1 MiB
-	buf := bytes.NewBuffer(nil)
+	buf := NewBuffer(make([]byte, 0, cnt))
 	bw := NewWriter(buf)
 
+	b.ReportAllocs()
 	b.SetBytes(int64(cnt))
 	b.ResetTimer()
 
 	for ni := 0; ni < b.N; ni++ {
+		buf.Reset()
+		bw.Reset(buf)
 		for bi := 0; bi < cnt; bi++ {
 			bw.WriteBit(true)
 			bw.WriteBit(false)
