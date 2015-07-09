@@ -18,7 +18,7 @@ func NewLimitedWriter(wr io.Writer, cnt int64) io.Writer {
 func (l *LimitedWriter) Write(data []byte) (cnt int, err error) {
 	inCnt := len(data)
 	if int64(inCnt) > l.N {
-		inCnt = l.N
+		inCnt = int(l.N)
 	}
 	if l.N < 0 {
 		inCnt = 0
@@ -27,6 +27,6 @@ func (l *LimitedWriter) Write(data []byte) (cnt int, err error) {
 	if err == nil && cnt < len(data) {
 		err = io.ErrShortWrite
 	}
-	l.N -= cnt
+	l.N -= int64(cnt)
 	return
 }
