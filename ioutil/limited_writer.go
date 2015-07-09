@@ -6,11 +6,16 @@ package ioutil
 
 import "io"
 
+// A LimitedWriter reads from W but limits the amount of data written to just N
+// bytes. Each call to Write updates N to reflect the new amount remaining.
 type LimitedWriter struct {
 	W io.Writer
 	N int64
 }
 
+// NewLimitedWriter returns a Writer that writes to wr but stops with
+// ErrShortWrite after cnt bytes. The underlying implementation is a
+// *LimitedWriter.
 func NewLimitedWriter(wr io.Writer, cnt int64) io.Writer {
 	return &LimitedWriter{wr, cnt}
 }

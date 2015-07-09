@@ -8,6 +8,8 @@ import "io"
 import "os"
 import "errors"
 
+// SectionWriter implements Write, Seek, and WriteAt on a section of an
+// underlying WriterAt.
 type SectionWriter struct {
 	wr    io.WriterAt
 	off   int64
@@ -15,6 +17,8 @@ type SectionWriter struct {
 	offHi int64
 }
 
+// NewSectionWriter returns a SectionWriter that writes to wr starting at offset
+// off and stops with ErrShortWrite after cnt bytes.
 func NewSectionWriter(wr io.WriterAt, off int64, cnt int64) *SectionWriter {
 	return &SectionWriter{wr, off, off, off + cnt}
 }

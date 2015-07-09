@@ -9,15 +9,22 @@ import "os"
 import "errors"
 import "unicode/utf8"
 
+// A Writer implements the io.Writer, io.WriterAt, io.ReaderFrom, io.Seeker,
+// and io.ByteWriter interfaces by writing to a byte slice.
+//
+// Rather than returning EOF when the slice boundary is reached, ErrShortWrite
+// is returned.
 type Writer struct {
 	buf []byte
 	idx int64
 }
 
-func NewWriter(data []byte) *Writer {
-	return &Writer{data, 0}
+// NewReader returns a new Reader writing to buf.
+func NewWriter(buf []byte) *Writer {
+	return &Writer{buf, 0}
 }
 
+// Len returns the number of bytes that have been written to the slice.
 func (w *Writer) Len() int {
 	if w.idx > int64(len(w.buf)) {
 		return len(w.buf)
@@ -55,6 +62,9 @@ func (w *Writer) WriteByte(b byte) error {
 	return nil
 }
 
+// Write a rune to the underlying slice. If the rune is invalid, then the
+// RuneError symbol is written. The rune is only written if there is available
+// buffer space, otherwise ErrShortWrite is returned.
 func (w *Writer) WriteRune(r rune) (cnt int, err error) {
 	cnt = utf8.RuneLen(r)
 	if cnt == -1 {
@@ -87,6 +97,10 @@ func (w *Writer) Seek(offset int64, whence int) (pos int64, err error) {
 	return pos, nil
 }
 
+// Copy data from the input reader into this slice until either EOF is hit in
+// the input reader or ErrShortWrite is hit on this writer. If either of those
+// cases occur, the return value will be nil. However, should a different error
+// occur, that error is returned.
 func (w *Writer) ReadFrom(rd io.Reader) (cnt int64, err error) {
 	cnt, err = io.Copy(w, rd)
 	if err == io.ErrShortWrite {
