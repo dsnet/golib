@@ -43,3 +43,19 @@ func ReaderAtSize(rd io.ReaderAt) (pos int64, err error) {
 	}
 	panic(errs.New("EOF is in a transient state"))
 }
+
+// Determine the size of a Seeker by seeking to the end. This function will
+// attempt to bring the file pointer back to the original location.
+func SeekerSize(sk io.Seeker) (pos int64, err error) {
+	var curPos int64
+	if curPos, err = sk.Seek(0, os.SEEK_CUR); err != nil {
+		return
+	}
+	if pos, err = sk.Seek(0, os.SEEK_END); err != nil {
+		return
+	}
+	if _, err = sk.Seek(curPos, os.SEEK_SET); err != nil {
+		return
+	}
+	return
+}
