@@ -59,7 +59,7 @@ func Example_lineMono() {
 			// of the buffer, Write() will never fail.
 			cnt, err := buffer.Write([]byte(data))
 			totalCnt += cnt
-			if err != nil {
+			if err == io.ErrShortWrite {
 				break
 			}
 
@@ -116,7 +116,7 @@ func Example_lineDual() {
 
 			// So long as the amount of data written has not exceeded the size
 			// of the buffer, Write() will never fail.
-			if _, err := buffer.Write([]byte(data)); err != nil {
+			if _, err := buffer.Write([]byte(data)); err == io.ErrShortWrite {
 				break
 			}
 
