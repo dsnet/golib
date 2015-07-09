@@ -61,7 +61,7 @@ func First(errs ...error) error {
 
 // Assert that an condition is true.
 func Assert(cond bool, err error) {
-	if cond {
+	if !cond {
 		panic(err)
 	}
 }
