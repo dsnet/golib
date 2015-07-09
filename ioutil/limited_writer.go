@@ -16,7 +16,7 @@ type LimitedWriter struct {
 // NewLimitedWriter returns a Writer that writes to wr but stops with
 // ErrShortWrite after cnt bytes. The underlying implementation is a
 // *LimitedWriter.
-func NewLimitedWriter(wr io.Writer, cnt int64) io.Writer {
+func NewLimitedWriter(wr io.Writer, cnt int64) *LimitedWriter {
 	return &LimitedWriter{wr, cnt}
 }
 

@@ -15,6 +15,6 @@ type LimitedReader struct {
 // A wrapper around the LimitedReader provided by package io. It is provided in
 // this library so that one does not need to import io also. It is the
 // functional complement of LimitedWriter.
-func NewLimitedReader(rd io.Reader, cnt int64) io.Reader {
+func NewLimitedReader(rd io.Reader, cnt int64) *LimitedReader {
 	return &LimitedReader{io.LimitedReader{rd, cnt}}
 }
