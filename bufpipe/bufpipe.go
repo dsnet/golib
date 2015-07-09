@@ -10,7 +10,7 @@ import "sync"
 
 // There are a number of modes of operation that BufferPipe can operate in.
 //
-// As such, there are 4 different (and mostly orthoganal) flags that can be
+// As such, there are 4 different (and mostly orthogonal) flags that can be
 // bitwise ORed together to create the mode of operation. Thus, with 4 flags,
 // there are technically 16 different possible combinations (although, some of
 // them are illogical). All 16 combinations are allowed, even if no sensible
@@ -50,8 +50,8 @@ const (
 	BlockI             // Blocking input vs. polling input
 	BlockO             // Blocking output vs. polling output
 
-	// The below flags are the inverse of the ones above. They exist so to make
-	// it obvious what the inverse is.
+	// The below flags are the inverse of the ones above. They exist to make it
+	// obvious what the inverse is.
 	Line  = 0 // Inverse of Ring
 	Mono  = 0 // Inverse of Dual
 	PollI = 0 // Inverse of BlockI
@@ -179,7 +179,7 @@ func (b *BufferPipe) writeSlice() ([]byte, error) {
 	}
 	buf := b.buf[offLo:offHi]
 
-	// Check erorr status
+	// Check error status
 	if len(buf) == 0 {
 		if b.closed {
 			return buf, io.ErrClosedPipe
@@ -309,7 +309,7 @@ func (b *BufferPipe) readSlice() ([]byte, error) {
 	}
 	buf := b.buf[offLo:offHi] // Linear and ring buffers
 
-	// Check erorr status.
+	// Check error status.
 	if len(buf) == 0 {
 		if b.closed {
 			return buf, io.EOF
