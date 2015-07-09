@@ -222,6 +222,7 @@ func BenchmarkBufferReader(b *testing.B) {
 	}
 	bb := NewBuffer(data)
 
+	runtime.GC()
 	b.ReportAllocs()
 	b.SetBytes(int64(cnt))
 	b.ResetTimer()
