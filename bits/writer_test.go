@@ -26,50 +26,50 @@ func TestWriter(t *testing.T) {
 	bw := NewWriter(b)
 
 	// Write first byte
-	assert.Equal(t, bw.ByteAligned(), true)
-	assert.Equal(t, bw.BytesWritten(), 0)
-	assert.Equal(t, bw.BitsWritten(), 0)
+	assert.Equal(t, true, bw.WriteAligned())
+	assert.Equal(t, 0, bw.BytesWritten())
+	assert.Equal(t, 0, bw.BitsWritten())
 
 	assert.Nil(t, bw.WriteBit(true))
-	assert.Equal(t, bw.ByteAligned(), false)
-	assert.Equal(t, bw.BytesWritten(), 0)
-	assert.Equal(t, bw.BitsWritten(), 1)
+	assert.Equal(t, false, bw.WriteAligned())
+	assert.Equal(t, 0, bw.BytesWritten())
+	assert.Equal(t, 1, bw.BitsWritten())
 
 	assert.Nil(t, bw.WriteBit(false))
-	assert.Equal(t, bw.ByteAligned(), false)
-	assert.Equal(t, bw.BytesWritten(), 0)
-	assert.Equal(t, bw.BitsWritten(), 2)
+	assert.Equal(t, false, bw.WriteAligned())
+	assert.Equal(t, 0, bw.BytesWritten())
+	assert.Equal(t, 2, bw.BitsWritten())
 
 	assert.Nil(t, bw.WriteBit(true))
-	assert.Equal(t, bw.ByteAligned(), false)
-	assert.Equal(t, bw.BytesWritten(), 0)
-	assert.Equal(t, bw.BitsWritten(), 3)
+	assert.Equal(t, false, bw.WriteAligned())
+	assert.Equal(t, 0, bw.BytesWritten())
+	assert.Equal(t, 3, bw.BitsWritten())
 
-	assert.Equal(t, bw.WriteByte(0xff), ErrAlign)
-	assert.Equal(t, b.Bytes(), []byte(nil))
+	assert.Equal(t, ErrAlign, bw.WriteByte(0xff))
+	assert.Equal(t, []byte(nil), nb(b.Bytes()))
 
 	assert.Nil(t, bw.WriteBit(true))
 	assert.Nil(t, bw.WriteBit(true))
 	assert.Nil(t, bw.WriteBit(false))
 	assert.Nil(t, bw.WriteBit(false))
 	assert.Nil(t, bw.WriteBit(true))
-	assert.Equal(t, bw.ByteAligned(), true)
-	assert.Equal(t, bw.BytesWritten(), 1)
-	assert.Equal(t, bw.BitsWritten(), 8)
-	assert.Equal(t, b.Bytes(), []byte{0x9d})
+	assert.Equal(t, true, bw.WriteAligned())
+	assert.Equal(t, 1, bw.BytesWritten())
+	assert.Equal(t, 8, bw.BitsWritten())
+	assert.Equal(t, []byte{0x9d}, nb(b.Bytes()))
 
 	// Write second byte
 	assert.Nil(t, bw.WriteByte(0xa7))
-	assert.Equal(t, bw.BytesWritten(), 2)
-	assert.Equal(t, bw.BitsWritten(), 16)
-	assert.Equal(t, b.Bytes(), []byte{0x9d, 0xa7})
+	assert.Equal(t, 2, bw.BytesWritten())
+	assert.Equal(t, 16, bw.BitsWritten())
+	assert.Equal(t, []byte{0x9d, 0xa7}, nb(b.Bytes()))
 
 	// Write third byte
 	b.fail = true
-	assert.Equal(t, bw.WriteByte(0xff), io.ErrShortWrite)
-	assert.Equal(t, bw.BytesWritten(), 2)
-	assert.Equal(t, bw.BitsWritten(), 16)
-	assert.Equal(t, b.Bytes(), []byte{0x9d, 0xa7})
+	assert.Equal(t, io.ErrShortWrite, bw.WriteByte(0xff))
+	assert.Equal(t, 2, bw.BytesWritten())
+	assert.Equal(t, 16, bw.BitsWritten())
+	assert.Equal(t, []byte{0x9d, 0xa7}, nb(b.Bytes()))
 
 	assert.Nil(t, bw.WriteBit(false))
 	assert.Nil(t, bw.WriteBit(false))
@@ -79,20 +79,20 @@ func TestWriter(t *testing.T) {
 	assert.Nil(t, bw.WriteBit(true))
 	assert.Nil(t, bw.WriteBit(true))
 
-	assert.Equal(t, bw.WriteBit(false), io.ErrShortWrite)
-	assert.Equal(t, bw.BytesWritten(), 2)
-	assert.Equal(t, bw.BitsWritten(), 23)
-	assert.Equal(t, b.Bytes(), []byte{0x9d, 0xa7})
+	assert.Equal(t, io.ErrShortWrite, bw.WriteBit(false))
+	assert.Equal(t, 2, bw.BytesWritten())
+	assert.Equal(t, 23, bw.BitsWritten())
+	assert.Equal(t, []byte{0x9d, 0xa7}, nb(b.Bytes()))
 
 	b.fail = false
 	assert.Nil(t, bw.WriteBit(false))
-	assert.Equal(t, bw.BytesWritten(), 3)
-	assert.Equal(t, bw.BitsWritten(), 24)
-	assert.Equal(t, b.Bytes(), []byte{0x9d, 0xa7, 0x74})
+	assert.Equal(t, 3, bw.BytesWritten())
+	assert.Equal(t, 24, bw.BitsWritten())
+	assert.Equal(t, []byte{0x9d, 0xa7, 0x74}, nb(b.Bytes()))
 
 	// Reset
 	bw.Reset(nil)
-	assert.Equal(t, bw.ByteAligned(), true)
-	assert.Equal(t, bw.BytesWritten(), 0)
-	assert.Equal(t, bw.BitsWritten(), 0)
+	assert.Equal(t, true, bw.WriteAligned())
+	assert.Equal(t, 0, bw.BytesWritten())
+	assert.Equal(t, 0, bw.BitsWritten())
 }
