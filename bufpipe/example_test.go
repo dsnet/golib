@@ -13,7 +13,7 @@ import "math/rand"
 func randomChars(cnt int, rand *rand.Rand) []byte {
 	data := make([]byte, cnt)
 	for idx := range data {
-		char := byte(rand.Intn(10+26+26))
+		char := byte(rand.Intn(10 + 26 + 26))
 		if char < 10 {
 			data[idx] = '0' + char
 		} else if char < 10+26 {
