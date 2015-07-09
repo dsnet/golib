@@ -452,22 +452,11 @@ func (b *BufferPipe) Rollback() int {
 	return int(cnt)
 }
 
-// Makes the buffer ready for use again. This will open the pipe for writing
-// again. For Line buffers, both pointers are set to zero. For Ring buffers, the
-// write pointer is set to the read pointer, and both are modded by the buffer
-// length. This effectively makes the valid length zero, but allows a writer to
-// immediately call MarkWrite() and reclaim previously written data.
+// Makes the buffer ready for use again by opening the pipe for writing again.
+// The read and write pointers will be reset to zero and errors will be cleared.
 func (b *BufferPipe) Reset() {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
-	if b.mode&Ring > 0 { // Ring buffer
-		b.rdPtr %= int64(len(b.buf))
-		b.wrPtr = b.rdPtr
-	} else { // Line buffer
-		b.wrPtr, b.rdPtr = 0, 0
-	}
-	b.err    = nil
-	b.closed = false
-	b.rdCond.Broadcast()
-	b.wrCond.Broadcast()
+	b.wrPtr, b.rdPtr = 0, 0
+	b.err, b.closed = nil, false
 }
