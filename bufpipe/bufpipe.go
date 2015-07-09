@@ -60,6 +60,11 @@ func NewBufferPipe(buf []byte, mode int) *BufferPipe {
 	return b
 }
 
+// The entire internal buffer. Be careful when touching the raw buffer.
+func (b *BufferPipe) Buffer() []byte {
+	return b.buf
+}
+
 // The total number of bytes the buffer can store.
 func (b *BufferPipe) Capacity() int {
 	return len(b.buf)
@@ -109,17 +114,13 @@ func (b *BufferPipe) WriteSlice() []byte {
 }
 
 func (b *BufferPipe) writeSlice() []byte {
-	if b.mode == RingDualIO {
-		availCnt := b.writeWait() // Block until there is available buffer
-
-		offLo := int(b.wrCnt) % len(b.buf)
-		offHi := offLo + availCnt
-		if offHi > len(b.buf) { // If available slice is split, take bottom
-			offHi = len(b.buf)
-		}
-		return b.buf[offLo:offHi] // Ring buffer
+	availCnt := b.writeWait() // Block until there is available buffer
+	offLo := int(b.wrCnt) % len(b.buf)
+	offHi := offLo + availCnt
+	if offHi > len(b.buf) { // If available slice is split, take bottom
+		offHi = len(b.buf)
 	}
-	return b.buf[b.wrCnt:] // Linear buffer
+	return b.buf[offLo:offHi] // Linear and ring buffers
 }
 
 // Advances the write pointer.
@@ -201,25 +202,21 @@ func (b *BufferPipe) ReadSlice() []byte {
 }
 
 func (b *BufferPipe) readSlice() []byte {
-	if b.mode == RingDualIO {
-		validCnt := b.readWait() // Block until there is valid buffer
-
-		offLo := int(b.rdCnt) % len(b.buf)
-		offHi := offLo + validCnt
-		if offHi > len(b.buf) { // If valid slice is split, take bottom
-			offHi = len(b.buf)
-		}
-		return b.buf[offLo:offHi] // Ring buffer
+	validCnt := b.readWait() // Block until there is valid buffer
+	offLo := int(b.rdCnt) % len(b.buf)
+	offHi := offLo + validCnt
+	if offHi > len(b.buf) { // If valid slice is split, take bottom
+		offHi = len(b.buf)
 	}
-	return b.buf[b.rdCnt:b.wrCnt] // Linear buffer
+	return b.buf[offLo:offHi] // Linear and ring buffers
 }
 
 // Advances the read pointer.
 //
 // The amount that can be advanced must be non-negative and be less than the
-// length of the slice returned by the previous ReadSlice(). Calls to Read()
-// may not be done between these two calls. Also, another call to ReadMark()
-// is invalid until ReadSlice() has been called again.
+// length of the slice returned by the previous ReadSlice(). Calls to Read() may
+// not be done between these two calls. Also, another call to ReadMark() is
+// invalid until ReadSlice() has been called again.
 //
 // If ReadMark() is being used, only one writer routine is allowed.
 func (b *BufferPipe) ReadMark(cnt int) {
