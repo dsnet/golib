@@ -8,8 +8,10 @@ are pulled out and placed here.
 
 ## Packages ##
 
-* [bufpipe](http://godoc.org/bitbucket.org/rawr/golib/bufpipe): A hybrid between
-a byte buffer and a pipe. In many ways, it operates like an io.Pipe.
+* [bits](http://godoc.org/bitbucket.org/rawr/golib/bits): Define readers and
+writers that operate at the bit level.
+* [bufpipe](http://godoc.org/bitbucket.org/rawr/golib/bufpipe): An efficient
+pipe to facilitate in communicating processes.
 * [errs](http://godoc.org/bitbucket.org/rawr/golib/errs): Helpful functions for
 dealing with errors.
 * [ioutil](http://godoc.org/bitbucket.org/rawr/golib/ioutil): Collection of io
