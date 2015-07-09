@@ -14,7 +14,3 @@ a byte buffer and a pipe. In many ways, it operates like an io.Pipe.
 dealing with errors.
 * [ioutil](http://godoc.org/bitbucket.org/rawr/golib/ioutil): Collection of io
 related functionality similar to what is found in package io and package bytes.
-
-## References ##
-
-* [godoc](http://godoc.org/bitbucket.org/rawr/golib) - Go documentation for this library

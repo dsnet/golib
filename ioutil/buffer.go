@@ -2,11 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE.md file.
 
+// Package ioutil is a collection of small io related implementations.
 package ioutil
 
-// Package ioutil is a collection of small io related implementations.
 import "bytes"
 
+// A Buffer is a variable-sized buffer of bytes with Read and Write methods.
+// The zero value for Buffer is an empty buffer ready to use.
 type Buffer struct {
 	bytes.Buffer
 }
