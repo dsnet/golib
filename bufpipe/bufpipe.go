@@ -126,8 +126,8 @@ func (b *BufferPipe) GetOffsets() (rdCnt, wrCnt int64) {
 
 func (b *BufferPipe) writeWait() int {
 	var rdZero int64 // Zero value
-	isLine := b.mode & Ring == 0
-	isBlock := b.mode & BlockI > 0
+	isLine := b.mode&Ring == 0
+	isBlock := b.mode&BlockI > 0
 
 	rdCnt := &b.rdCnt
 	if isLine {
@@ -262,8 +262,8 @@ func (b *BufferPipe) ReadFrom(rd io.Reader) (cnt int64, err error) {
 }
 
 func (b *BufferPipe) readWait() int {
-	isBlock := b.mode & BlockO > 0
-	isMono := b.mode & Dual == 0
+	isBlock := b.mode&BlockO > 0
+	isMono := b.mode&Dual == 0
 	if isBlock {
 		for !b.closed && b.rdCnt == b.wrCnt {
 			b.rdCond.Wait()
