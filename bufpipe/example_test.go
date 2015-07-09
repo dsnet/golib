@@ -2,15 +2,16 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE.md file.
 
-package bufpipe
+package bufpipe_test
 
 import "io"
 import "fmt"
 import "time"
 import "sync"
 import "math/rand"
+import "bitbucket.org/rawr/golib/bufpipe"
 
-func randomChars(cnt int, rand *rand.Rand) []byte {
+func randomChars(cnt int, rand *rand.Rand) string {
 	data := make([]byte, cnt)
 	for idx := range data {
 		char := byte(rand.Intn(10 + 26 + 26))
@@ -22,12 +23,17 @@ func randomChars(cnt int, rand *rand.Rand) []byte {
 			data[idx] = 'a' + char - 36
 		}
 	}
-	return data
+	return string(data)
 }
 
-func ExampleLineMonoPipe() {
-	// The buffer is large enough such that the producer doesn't overfill it.
-	buffer := bufpipe.NewBufferPipe(make([]byte, 4096), bufpipe.LineMono)
+// In LineMono mode, the consumer cannot see the written data until the pipe is
+// closed. Thus, it is possible to go back to the front of the pipe and record
+// the total number of bytes written out. This functionality is useful in cases
+// where a file format's header contains information that is dependent on what
+// is eventually written.
+func Example_lineMono() {
+	// The buffer is small enough such that the producer does hit the limit.
+	buffer := bufpipe.NewBufferPipe(make([]byte, 256), bufpipe.LineMono)
 
 	rand := rand.New(rand.NewSource(0))
 	group := new(sync.WaitGroup)
@@ -45,15 +51,17 @@ func ExampleLineMonoPipe() {
 			panic(err)
 		}
 
-		totalCnt := 0
-		buffer.Write([]byte("#### "))
-		for idx := 0; idx < 10; idx++ {
-			data := randomChars(rand.Intn(64), rand)
+		totalCnt, _ := buffer.Write([]byte("#### "))
+		for idx := 0; idx < 8; idx++ {
+			data := randomChars(rand.Intn(64), rand) + "\n"
 
 			// So long as the amount of data written has not exceeded the size
 			// of the buffer, Write() will never fail.
-			buffer.Write([]byte(data))
-			totalCnt += len(data)
+			cnt, err := buffer.Write([]byte(data))
+			totalCnt += cnt
+			if err != nil {
+				break
+			}
 
 			time.Sleep(100 * time.Millisecond)
 		}
@@ -75,11 +83,23 @@ func ExampleLineMonoPipe() {
 	}()
 
 	group.Wait()
+
+	// Output:
+	// 0256 kdUhQzHYs2LjaukXEC292UgLOCAPQTCNAKfc0XMNCUuJbsqiHmm6GJMFck
+	// whxMYR1k
+	// zhMYzktxIv10mIPqBCCwm646E6chwIFZfpX0fjqMu0YKLDhfIMnDq8w9J
+	// fQhkT1qEkJfEI0jtbDnIrEXx6G4xMgXEB6auAyBUjPk2jMSgCMVZf8L1VgJemin
+	// 2Quy1C5aA00KbYqawNeuXYTvgeUXGu3zyjMUoEIrOx7
+	// ecE4dY3ZaTrX03xBY
 }
 
-func ExampleLineDualPipe() {
-	// The buffer is large enough such that the producer doesn't overfill it.
-	buffer := bufpipe.NewBufferPipe(make([]byte, 4096), bufpipe.LineDual)
+// In LineDual mode, the consumer sees produced data immediately as it becomes
+// available. The producer is only allowed to write as much data as the size of
+// the underlying buffer. The amount that can be written is independent of the
+// operation of the consumer.
+func Example_lineDual() {
+	// The buffer is small enough such that the producer does hit the limit.
+	buffer := bufpipe.NewBufferPipe(make([]byte, 256), bufpipe.LineDual)
 
 	rand := rand.New(rand.NewSource(0))
 	group := new(sync.WaitGroup)
@@ -91,12 +111,14 @@ func ExampleLineDualPipe() {
 		defer buffer.Close()
 
 		buffer.Write([]byte("#### ")) // Write a fake header
-		for idx := 0; idx < 10; idx++ {
-			data := randomChars(rand.Intn(64), rand)
+		for idx := 0; idx < 8; idx++ {
+			data := randomChars(rand.Intn(64), rand) + "\n"
 
 			// So long as the amount of data written has not exceeded the size
 			// of the buffer, Write() will never fail.
-			buffer.Write([]byte(data))
+			if _, err := buffer.Write([]byte(data)); err != nil {
+				break
+			}
 
 			time.Sleep(100 * time.Millisecond)
 		}
@@ -120,12 +142,23 @@ func ExampleLineDualPipe() {
 	}()
 
 	group.Wait()
+
+	// Output:
+	// #### kdUhQzHYs2LjaukXEC292UgLOCAPQTCNAKfc0XMNCUuJbsqiHmm6GJMFck
+	// whxMYR1k
+	// zhMYzktxIv10mIPqBCCwm646E6chwIFZfpX0fjqMu0YKLDhfIMnDq8w9J
+	// fQhkT1qEkJfEI0jtbDnIrEXx6G4xMgXEB6auAyBUjPk2jMSgCMVZf8L1VgJemin
+	// 2Quy1C5aA00KbYqawNeuXYTvgeUXGu3zyjMUoEIrOx7
+	// ecE4dY3ZaTrX03xBY
 }
 
-func ExampleRingBlockPipe() {
+// In RingBlock mode, the consumer sees produced data immediately as it becomes
+// available. The producer is allowed to write as much data as it wants so long
+// as the consumer continues to read the data in the pipe.
+func Example_ringBlock() {
 	// Intentionally small buffer to show that data written into the buffer
 	// can exceed the size of the buffer itself.
-	buffer := bufpipe.NewBufferPipe(make([]byte, 128), bufpipe.RingBlock)
+	buffer := bufpipe.NewBufferPipe(make([]byte, 64), bufpipe.RingBlock)
 
 	rand := rand.New(rand.NewSource(0))
 	group := new(sync.WaitGroup)
@@ -137,8 +170,8 @@ func ExampleRingBlockPipe() {
 		defer buffer.Close()
 
 		buffer.Write([]byte("#### ")) // Write a fake header
-		for idx := 0; idx < 10; idx++ {
-			data := randomChars(rand.Intn(64), rand)
+		for idx := 0; idx < 8; idx++ {
+			data := randomChars(rand.Intn(64), rand) + "\n"
 
 			// So long as the amount of data written has not exceeded the size
 			// of the buffer, Write() will never fail.
@@ -165,4 +198,14 @@ func ExampleRingBlockPipe() {
 	}()
 
 	group.Wait()
+
+	// Output:
+	// #### kdUhQzHYs2LjaukXEC292UgLOCAPQTCNAKfc0XMNCUuJbsqiHmm6GJMFck
+	// whxMYR1k
+	// zhMYzktxIv10mIPqBCCwm646E6chwIFZfpX0fjqMu0YKLDhfIMnDq8w9J
+	// fQhkT1qEkJfEI0jtbDnIrEXx6G4xMgXEB6auAyBUjPk2jMSgCMVZf8L1VgJemin
+	// 2Quy1C5aA00KbYqawNeuXYTvgeUXGu3zyjMUoEIrOx7
+	// ecE4dY3ZaTrX03xBYJ04OzomME36yth76CFmg2zTolzKhYByvZ8
+	// FQMuYbcWHLcUu4yL3aBZkwJrbDFUcHpGnBGfbDq4aFlLS5vGOm6mYOjHZll
+	// iP0QQKpKp3cz
 }
