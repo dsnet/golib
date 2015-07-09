@@ -11,3 +11,5 @@ are pulled out and placed here.
 * bufpipe: A hybrid between a byte buffer and a pipe. In many ways, it operates
 in a similar fashion as io.Pipe.
 * errs: Helpful functions for dealing with errors.
+* ioutil: Collection of io related functionality similar to what is found in
+package io and package bytes.
