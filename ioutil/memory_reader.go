@@ -36,6 +36,7 @@ func (r *MemoryReader) Read(data []byte) (cnt int, err error) {
 	// Top off the input buffer with actual Read() call
 	var rdCnt int
 	rdCnt, err = r.rd.Read(data)
+	data = data[:rdCnt]
 	cnt += rdCnt
 
 	// Write data to ring buffer
