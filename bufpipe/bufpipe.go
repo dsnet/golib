@@ -429,7 +429,7 @@ func (b *BufferPipe) Close() error {
 func (b *BufferPipe) Reset() {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
-	if b.mode & Ring > 0 { // Ring buffer
+	if b.mode&Ring > 0 { // Ring buffer
 		b.rdPtr %= int64(len(b.buf))
 		b.wrPtr = b.rdPtr
 	} else { // Line buffer
