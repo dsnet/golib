@@ -10,51 +10,52 @@ import "testing"
 import "github.com/stretchr/testify/assert"
 
 func TestBtoi(t *testing.T) {
-	assert.Equal(t, Btoi(false), uint(0))
-	assert.Equal(t, Btoi(true), uint(1))
+	assert.Equal(t, uint(0), Btoi(false))
+	assert.Equal(t, uint(1), Btoi(true))
 }
 
 func TestItob(t *testing.T) {
-	assert.Equal(t, Itob(0), false)
-	assert.Equal(t, Itob(1), true)
-	assert.Equal(t, Itob(2), true)
-	assert.Equal(t, Itob(MaxUint), true)
+	assert.Equal(t, false, Itob(0))
+	assert.Equal(t, true, Itob(1))
+	assert.Equal(t, true, Itob(2))
+	assert.Equal(t, true, Itob(MaxUint))
 }
 
 func TestGet(t *testing.T) {
 	b := []byte{0x7b, 0x3a}
 
-	assert.Equal(t, Get(b, 0), true)
-	assert.Equal(t, Get(b, 1), true)
-	assert.Equal(t, Get(b, 2), false)
-	assert.Equal(t, Get(b, 3), true)
-	assert.Equal(t, Get(b, 4), true)
-	assert.Equal(t, Get(b, 5), true)
-	assert.Equal(t, Get(b, 6), true)
-	assert.Equal(t, Get(b, 7), false)
+	assert.Equal(t, true, Get(b, 0))
+	assert.Equal(t, true, Get(b, 1))
+	assert.Equal(t, false, Get(b, 2))
+	assert.Equal(t, true, Get(b, 3))
+	assert.Equal(t, true, Get(b, 4))
+	assert.Equal(t, true, Get(b, 5))
+	assert.Equal(t, true, Get(b, 6))
+	assert.Equal(t, false, Get(b, 7))
 
-	assert.Equal(t, Get(b, 8), false)
-	assert.Equal(t, Get(b, 9), true)
-	assert.Equal(t, Get(b, 10), false)
-	assert.Equal(t, Get(b, 11), true)
-	assert.Equal(t, Get(b, 12), true)
-	assert.Equal(t, Get(b, 13), true)
-	assert.Equal(t, Get(b, 14), false)
-	assert.Equal(t, Get(b, 15), false)
+	assert.Equal(t, false, Get(b, 8))
+	assert.Equal(t, true, Get(b, 9))
+	assert.Equal(t, false, Get(b, 10))
+	assert.Equal(t, true, Get(b, 11))
+	assert.Equal(t, true, Get(b, 12))
+	assert.Equal(t, true, Get(b, 13))
+	assert.Equal(t, false, Get(b, 14))
+	assert.Equal(t, false, Get(b, 15))
 }
 
 func TestGetN(t *testing.T) {
-	assert.Equal(t, GetN([]byte(nil), 0, 0), uint(0x00))
-	assert.Equal(t, GetN([]byte{0xaf}, 4, 0), uint(0x0f))
-	assert.Equal(t, GetN([]byte{0xaf, 0x3a}, 4, 4), uint(0x0a))
-	assert.Equal(t, GetN([]byte{0xaf, 0xb8}, 6, 2), uint(0x2b))
-	assert.Equal(t, GetN([]byte{0xba, 0x64}, 13, 1), uint(0x125d))
-	assert.Equal(t, GetN([]byte{0x04, 0x5c, 0xeb, 0x2d}, 8, 0), uint(0x04))
-	assert.Equal(t, GetN([]byte{0x04, 0x5c, 0xeb, 0x2d}, 8, 8), uint(0x5c))
-	assert.Equal(t, GetN([]byte{0x04, 0x5c, 0xeb, 0x2d}, 8, 16), uint(0xeb))
-	assert.Equal(t, GetN([]byte{0x04, 0x5c, 0xeb, 0x2d}, 8, 24), uint(0x2d))
-	assert.Equal(t, GetN([]byte{0x04, 0x5c, 0xeb, 0x2d}, 5, 17), uint(0x15))
-	assert.Equal(t, GetN([]byte{0x04, 0x5c, 0xeb, 0x2d}, 26, 3), uint(0x1bd6b80))
+	assert.Equal(t, uint(0x00), GetN([]byte(nil), 0, 0))
+	assert.Equal(t, uint(0x00), GetN([]byte{}, 0, 0))
+	assert.Equal(t, uint(0x0f), GetN([]byte{0xaf}, 4, 0))
+	assert.Equal(t, uint(0x0a), GetN([]byte{0xaf, 0x3a}, 4, 4))
+	assert.Equal(t, uint(0x2b), GetN([]byte{0xaf, 0xb8}, 6, 2))
+	assert.Equal(t, uint(0x125d), GetN([]byte{0xba, 0x64}, 13, 1))
+	assert.Equal(t, uint(0x04), GetN([]byte{0x04, 0x5c, 0xeb, 0x2d}, 8, 0))
+	assert.Equal(t, uint(0x5c), GetN([]byte{0x04, 0x5c, 0xeb, 0x2d}, 8, 8))
+	assert.Equal(t, uint(0xeb), GetN([]byte{0x04, 0x5c, 0xeb, 0x2d}, 8, 16))
+	assert.Equal(t, uint(0x2d), GetN([]byte{0x04, 0x5c, 0xeb, 0x2d}, 8, 24))
+	assert.Equal(t, uint(0x15), GetN([]byte{0x04, 0x5c, 0xeb, 0x2d}, 5, 17))
+	assert.Equal(t, uint(0x1bd6b80), GetN([]byte{0x04, 0x5c, 0xeb, 0x2d}, 26, 3))
 }
 
 func TestSet(t *testing.T) {
@@ -64,23 +65,23 @@ func TestSet(t *testing.T) {
 	Set(b, true, 1)
 	Set(b, false, 2)
 	Set(b, true, 3)
-	assert.Equal(t, b, []byte{0x0b, 0xff})
+	assert.Equal(t, []byte{0x0b, 0xff}, b)
 	Set(b, true, 4)
 	Set(b, true, 5)
 	Set(b, true, 6)
 	Set(b, false, 7)
-	assert.Equal(t, b, []byte{0x7b, 0xff})
+	assert.Equal(t, []byte{0x7b, 0xff}, b)
 
 	Set(b, false, 8)
 	Set(b, true, 9)
 	Set(b, false, 10)
 	Set(b, true, 11)
-	assert.Equal(t, b, []byte{0x7b, 0xfa})
+	assert.Equal(t, []byte{0x7b, 0xfa}, b)
 	Set(b, true, 12)
 	Set(b, true, 13)
 	Set(b, false, 14)
 	Set(b, false, 15)
-	assert.Equal(t, b, []byte{0x7b, 0x3a})
+	assert.Equal(t, []byte{0x7b, 0x3a}, b)
 }
 
 func TestSetN(t *testing.T) {
@@ -91,71 +92,71 @@ func TestSetN(t *testing.T) {
 
 	b = []byte{0xaa}
 	SetN(b, 0x0f, 4, 0)
-	assert.Equal(t, b, []byte{0xaf})
+	assert.Equal(t, []byte{0xaf}, b)
 
 	b = []byte{0x55, 0x55}
 	SetN(b, 0x0a, 4, 4)
-	assert.Equal(t, b, []byte{0xa5, 0x55})
+	assert.Equal(t, []byte{0xa5, 0x55}, b)
 
 	b = []byte{0x55, 0x55}
 	SetN(b, 0x2b, 6, 2)
-	assert.Equal(t, b, []byte{0xad, 0x55})
+	assert.Equal(t, []byte{0xad, 0x55}, b)
 
 	b = []byte{0x55, 0x55}
 	SetN(b, 0x125d, 13, 1)
-	assert.Equal(t, b, []byte{0xbb, 0x64})
+	assert.Equal(t, []byte{0xbb, 0x64}, b)
 
 	b = []byte{0x55, 0x55, 0x55, 0x55}
 	SetN(b, 0x04, 8, 0)
-	assert.Equal(t, b, []byte{0x04, 0x55, 0x55, 0x55})
+	assert.Equal(t, []byte{0x04, 0x55, 0x55, 0x55}, b)
 
 	b = []byte{0x55, 0x55, 0x55, 0x55}
 	SetN(b, 0x5c, 8, 8)
-	assert.Equal(t, b, []byte{0x55, 0x5c, 0x55, 0x55})
+	assert.Equal(t, []byte{0x55, 0x5c, 0x55, 0x55}, b)
 
 	b = []byte{0x55, 0x55, 0x55, 0x55}
 	SetN(b, 0xeb, 8, 16)
-	assert.Equal(t, b, []byte{0x55, 0x55, 0xeb, 0x55})
+	assert.Equal(t, []byte{0x55, 0x55, 0xeb, 0x55}, b)
 
 	b = []byte{0x55, 0x55, 0x55, 0x55}
 	SetN(b, 0x2d, 8, 24)
-	assert.Equal(t, b, []byte{0x55, 0x55, 0x55, 0x2d})
+	assert.Equal(t, []byte{0x55, 0x55, 0x55, 0x2d}, b)
 
 	b = []byte{0x55, 0x55, 0x55, 0x55}
 	SetN(b, 0x15, 5, 17)
-	assert.Equal(t, b, []byte{0x55, 0x55, 0x6b, 0x55})
+	assert.Equal(t, []byte{0x55, 0x55, 0x6b, 0x55}, b)
 
 	b = []byte{0x55, 0x55, 0x55, 0x55}
 	SetN(b, 0x1bd6b80, 26, 3)
-	assert.Equal(t, b, []byte{0x05, 0x5c, 0xeb, 0x4d})
+	assert.Equal(t, []byte{0x05, 0x5c, 0xeb, 0x4d}, b)
 
 	b = []byte{0x55, 0x55, 0x55, 0x55}
 	SetN(b, 0xf1bd6b80, 26, 3)
-	assert.Equal(t, b, []byte{0x05, 0x5c, 0xeb, 0x4d})
+	assert.Equal(t, []byte{0x05, 0x5c, 0xeb, 0x4d}, b)
 }
 
 func TestCount(t *testing.T) {
 	var zeros, ones int
 
 	zeros, ones = Count(nil)
-	assert.Equal(t, zeros, 0)
-	assert.Equal(t, ones, 0)
+	assert.Equal(t, 0, zeros)
+	assert.Equal(t, 0, ones)
 
 	zeros, ones = Count([]byte{0xaa})
-	assert.Equal(t, zeros, 4)
-	assert.Equal(t, ones, 4)
+	assert.Equal(t, 4, zeros)
+	assert.Equal(t, 4, ones)
 
 	zeros, ones = Count([]byte{0x7b})
-	assert.Equal(t, zeros, 2)
-	assert.Equal(t, ones, 6)
+	assert.Equal(t, 2, zeros)
+	assert.Equal(t, 6, ones)
 
 	zeros, ones = Count([]byte{0xf3, 0xd1})
-	assert.Equal(t, zeros, 6)
-	assert.Equal(t, ones, 10)
+	assert.Equal(t, 6, zeros)
+	assert.Equal(t, 10, ones)
 
 	zeros, ones = Count([]byte{0xff, 0xff, 0xff})
-	assert.Equal(t, zeros, 0)
-	assert.Equal(t, ones, 24)
+	assert.Equal(t, 0, zeros)
+	assert.Equal(t, 24, ones)
 }
 
 func TestInvert(t *testing.T) {
@@ -163,48 +164,48 @@ func TestInvert(t *testing.T) {
 
 	b = []byte(nil)
 	Invert(b)
-	assert.Equal(t, b, []byte(nil))
+	assert.Equal(t, []byte(nil), b)
 
 	b = []byte{0xaa}
 	Invert(b)
-	assert.Equal(t, b, []byte{0x55})
+	assert.Equal(t, []byte{0x55}, b)
 
 	b = []byte{0x7b}
 	Invert(b)
-	assert.Equal(t, b, []byte{0x84})
+	assert.Equal(t, []byte{0x84}, b)
 
 	b = []byte{0xf3, 0xd1}
 	Invert(b)
-	assert.Equal(t, b, []byte{0xc, 0x2e})
+	assert.Equal(t, []byte{0xc, 0x2e}, b)
 
 	b = []byte{0xff, 0xff, 0xff}
 	Invert(b)
-	assert.Equal(t, b, []byte{0x00, 0x00, 0x00})
+	assert.Equal(t, []byte{0x00, 0x00, 0x00}, b)
 }
 
 func TestReverseUint(t *testing.T) {
-	assert.Equal(t, ReverseUint(0), uint(0))
-	assert.Equal(t, ReverseUint(MaxUint), MaxUint)
-	assert.Equal(t, ReverseUint(MaxUint>>1), MaxUint&(^uint(1)))
-	assert.Equal(t, ReverseUint(MaxUint>>2), MaxUint&(^uint(3)))
-	assert.Equal(t, ReverseUint(MaxUint>>3), MaxUint&(^uint(7)))
-	assert.Equal(t, ReverseUint(0xed), uint(0xb7<<uint(NumUintBits-8)))
-	assert.Equal(t, ReverseUint(0xabcde), uint(0x7b3d5<<uint(NumUintBits-20)))
+	assert.Equal(t, uint(0), ReverseUint(0))
+	assert.Equal(t, MaxUint, ReverseUint(MaxUint))
+	assert.Equal(t, MaxUint&(^uint(1)), ReverseUint(MaxUint>>1))
+	assert.Equal(t, MaxUint&(^uint(3)), ReverseUint(MaxUint>>2))
+	assert.Equal(t, MaxUint&(^uint(7)), ReverseUint(MaxUint>>3))
+	assert.Equal(t, uint(0xb7<<uint(NumUintBits-8)), ReverseUint(0xed))
+	assert.Equal(t, uint(0x7b3d5<<uint(NumUintBits-20)), ReverseUint(0xabcde))
 }
 
 func TestReverseUintN(t *testing.T) {
-	assert.Equal(t, ReverseUintN(MaxUint, 0), uint(0))
-	assert.Equal(t, ReverseUintN(MaxUint, NumUintBits), MaxUint)
-	assert.Equal(t, ReverseUintN(MaxUint, NumUintBits-1), MaxUint>>1)
-	assert.Equal(t, ReverseUintN(MaxUint, NumUintBits-2), MaxUint>>2)
-	assert.Equal(t, ReverseUintN(MaxUint>>1, NumUintBits), MaxUint&(^uint(1)))
-	assert.Equal(t, ReverseUintN(MaxUint>>2, NumUintBits), MaxUint&(^uint(3)))
-	assert.Equal(t, ReverseUintN(MaxUint>>3, NumUintBits), MaxUint&(^uint(7)))
-	assert.Equal(t, ReverseUintN(0xed, 8), uint(0xb7))
-	assert.Equal(t, ReverseUintN(0xed, 10), uint(0xb7)<<2)
-	assert.Equal(t, ReverseUintN(0xabcde, 20), uint(0x7b3d5))
-	assert.Equal(t, ReverseUintN(0xfabcde, 20), uint(0x7b3d5))
-	assert.Equal(t, ReverseUintN(0xabcde, 23), uint(0x7b3d5)<<3)
+	assert.Equal(t, uint(0), ReverseUintN(MaxUint, 0))
+	assert.Equal(t, MaxUint, ReverseUintN(MaxUint, NumUintBits))
+	assert.Equal(t, MaxUint>>1, ReverseUintN(MaxUint, NumUintBits-1))
+	assert.Equal(t, MaxUint>>2, ReverseUintN(MaxUint, NumUintBits-2))
+	assert.Equal(t, MaxUint&(^uint(1)), ReverseUintN(MaxUint>>1, NumUintBits))
+	assert.Equal(t, MaxUint&(^uint(3)), ReverseUintN(MaxUint>>2, NumUintBits))
+	assert.Equal(t, MaxUint&(^uint(7)), ReverseUintN(MaxUint>>3, NumUintBits))
+	assert.Equal(t, uint(0xb7), ReverseUintN(0xed, 8))
+	assert.Equal(t, uint(0xb7)<<2, ReverseUintN(0xed, 10))
+	assert.Equal(t, uint(0x7b3d5), ReverseUintN(0xabcde, 20))
+	assert.Equal(t, uint(0x7b3d5), ReverseUintN(0xfabcde, 20))
+	assert.Equal(t, uint(0x7b3d5)<<3, ReverseUintN(0xabcde, 23))
 }
 
 func TestReadBits(t *testing.T) {
@@ -216,64 +217,64 @@ func TestReadBits(t *testing.T) {
 	br := NewReader(b)
 
 	val, cnt, err = ReadBits(br, 0)
-	assert.Equal(t, val, uint(0))
-	assert.Equal(t, cnt, 0)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, b.Len(), 0)
+	assert.Equal(t, uint(0), val)
+	assert.Equal(t, 0, cnt)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 0, b.Len())
 
 	val, cnt, err = ReadBits(br, 1)
-	assert.Equal(t, val, uint(0))
-	assert.Equal(t, cnt, 0)
-	assert.Equal(t, err, io.EOF)
-	assert.Equal(t, b.Len(), 0)
+	assert.Equal(t, uint(0), val)
+	assert.Equal(t, 0, cnt)
+	assert.Equal(t, io.EOF, err)
+	assert.Equal(t, 0, b.Len())
 
 	b.Write([]byte{0xc9})
-	assert.Equal(t, b.Len(), 1)
+	assert.Equal(t, 1, b.Len())
 
 	val, cnt, err = ReadBits(br, 3)
-	assert.Equal(t, val, uint(1))
-	assert.Equal(t, cnt, 3)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, b.Len(), 0)
+	assert.Equal(t, uint(1), val)
+	assert.Equal(t, 3, cnt)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 0, b.Len())
 
 	val, cnt, err = ReadBits(br, 8)
-	assert.Equal(t, val, uint(0x19))
-	assert.Equal(t, cnt, 5)
-	assert.Equal(t, err, io.ErrUnexpectedEOF)
-	assert.Equal(t, b.Len(), 0)
+	assert.Equal(t, uint(0x19), val)
+	assert.Equal(t, 5, cnt)
+	assert.Equal(t, io.ErrUnexpectedEOF, err)
+	assert.Equal(t, 0, b.Len())
 
 	val, cnt, err = ReadBits(br, 8)
-	assert.Equal(t, val, uint(0))
-	assert.Equal(t, cnt, 0)
-	assert.Equal(t, err, io.EOF)
-	assert.Equal(t, b.Len(), 0)
+	assert.Equal(t, uint(0), val)
+	assert.Equal(t, 0, cnt)
+	assert.Equal(t, io.EOF, err)
+	assert.Equal(t, 0, b.Len())
 
 	b.Write([]byte{0xeb, 0xad, 0xe2})
-	assert.Equal(t, b.Len(), 3)
+	assert.Equal(t, 3, b.Len())
 
 	val, cnt, err = ReadBits(br, 7)
-	assert.Equal(t, val, uint(0x6b))
-	assert.Equal(t, cnt, 7)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, b.Len(), 2)
+	assert.Equal(t, uint(0x6b), val)
+	assert.Equal(t, 7, cnt)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 2, b.Len())
 
 	val, cnt, err = ReadBits(br, 9)
-	assert.Equal(t, val, uint(0x15b))
-	assert.Equal(t, cnt, 9)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, b.Len(), 1)
+	assert.Equal(t, uint(0x15b), val)
+	assert.Equal(t, 9, cnt)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 1, b.Len())
 
 	val, cnt, err = ReadBits(br, 8)
-	assert.Equal(t, val, uint(0xe2))
-	assert.Equal(t, cnt, 8)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, b.Len(), 0)
+	assert.Equal(t, uint(0xe2), val)
+	assert.Equal(t, 8, cnt)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 0, b.Len())
 
 	val, cnt, err = ReadBits(br, 3)
-	assert.Equal(t, val, uint(0))
-	assert.Equal(t, cnt, 0)
-	assert.Equal(t, err, io.EOF)
-	assert.Equal(t, b.Len(), 0)
+	assert.Equal(t, uint(0), val)
+	assert.Equal(t, 0, cnt)
+	assert.Equal(t, io.EOF, err)
+	assert.Equal(t, 0, b.Len())
 }
 
 func TestWriteBits(t *testing.T) {
@@ -284,33 +285,33 @@ func TestWriteBits(t *testing.T) {
 	bw := NewWriter(b)
 
 	cnt, err = WriteBits(bw, 0x16, 5)
-	assert.Equal(t, cnt, 5)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, b.Len(), 0)
+	assert.Equal(t, 5, cnt)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 0, b.Len())
 
 	cnt, err = WriteBits(bw, 0x0b, 5)
-	assert.Equal(t, cnt, 5)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, b.Len(), 1)
+	assert.Equal(t, 5, cnt)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 1, b.Len())
 
 	cnt, err = WriteBits(bw, 0x2d, 6)
-	assert.Equal(t, cnt, 6)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, b.Len(), 2)
+	assert.Equal(t, 6, cnt)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 2, b.Len())
 
 	b.fail = true
 
 	cnt, err = WriteBits(bw, 0x1a6d, 13)
-	assert.Equal(t, cnt, 7)
-	assert.Equal(t, err, io.ErrShortWrite)
-	assert.Equal(t, b.Len(), 2)
+	assert.Equal(t, 7, cnt)
+	assert.Equal(t, io.ErrShortWrite, err)
+	assert.Equal(t, 2, b.Len())
 
 	b.fail = false
 
 	cnt, err = WriteBits(bw, 0x1a7b1, 17)
-	assert.Equal(t, cnt, 17)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, b.Len(), 5)
+	assert.Equal(t, 17, cnt)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 5, b.Len())
 
-	assert.Equal(t, b.Bytes(), []byte{0x76, 0xb5, 0xed, 0xd8, 0xd3})
+	assert.Equal(t, []byte{0x76, 0xb5, 0xed, 0xd8, 0xd3}, b.Bytes())
 }
