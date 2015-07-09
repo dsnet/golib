@@ -72,6 +72,7 @@ type BufferPipe struct {
 	rdPtr  int64
 	wrPtr  int64
 	closed bool
+	err    error
 	mutex  sync.Mutex
 	rdCond sync.Cond
 	wrCond sync.Cond
@@ -100,17 +101,17 @@ func NewBufferPipe(buf []byte, mode int) *BufferPipe {
 // The entire internal buffer. Be careful when touching the raw buffer.
 // Line buffers are always guaranteed to be aligned to be front of the slice.
 // Ring buffers use wrap around logic and could be physically split apart.
-func (b *BufferPipe) GetBuffer() []byte {
+func (b *BufferPipe) Buffer() []byte {
 	return b.buf
 }
 
 // The BufferPipe mode of operation.
-func (b *BufferPipe) GetMode() int {
+func (b *BufferPipe) Mode() int {
 	return b.mode
 }
 
 // The internal pointer values.
-func (b *BufferPipe) GetPointers() (rdPtr, wrPtr int64) {
+func (b *BufferPipe) Pointers() (rdPtr, wrPtr int64) {
 	return b.rdPtr, b.wrPtr
 }
 
@@ -186,9 +187,13 @@ func (b *BufferPipe) writeSlices() (bufLo, bufHi []byte, err error) {
 
 	// Check error status
 	if len(bufLo) == 0 {
-		err = io.ErrShortWrite
-		if b.closed {
+		switch {
+		case b.err != nil:
+			err = b.err
+		case b.closed:
 			err = io.ErrClosedPipe
+		default:
+			err = io.ErrShortWrite
 		}
 	}
 	return
@@ -319,11 +324,15 @@ func (b *BufferPipe) readSlices() (bufLo, bufHi []byte, err error) {
 	}
 	bufLo = b.buf[offLo:offHi] // Bottom half (will contain all data for Line)
 
-	// Check error status.
+	// Check error status
 	if len(bufLo) == 0 {
-		err = io.ErrNoProgress
-		if b.closed {
+		switch {
+		case b.err != nil:
+			err = b.err
+		case b.closed:
 			err = io.EOF
+		default:
+			err = io.ErrNoProgress
 		}
 	}
 	return
@@ -413,12 +422,34 @@ func (b *BufferPipe) WriteTo(wr io.Writer) (cnt int64, err error) {
 // The mechanism allows readers to inform writers of consumer termination and
 // prevents the producer from potentially being blocked forever.
 func (b *BufferPipe) Close() error {
+	return b.CloseWithError(nil)
+}
+
+// Closes the pipe with the given error. This sets the error value for the pipe
+// and returns the previous error value.
+func (b *BufferPipe) CloseWithError(err error) (errPre error) {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
+	errPre, b.err = b.err, err
 	b.closed = true
-	b.rdCond.Signal()
-	b.wrCond.Signal()
-	return nil
+	b.rdCond.Broadcast()
+	b.wrCond.Broadcast()
+	return errPre
+}
+
+// Roll back the write pointer and return the number of bytes rolled back.
+// If successful, this effectively makes the valid length zero. In order to
+// prevent race conditions with the reader, this action is only valid in Mono
+// access mode before the channel is closed.
+func (b *BufferPipe) Rollback() int {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	if b.closed || b.mode&Dual > 0 {
+		return 0
+	}
+	cnt := b.wrPtr - b.rdPtr
+	b.wrPtr = b.rdPtr
+	return int(cnt)
 }
 
 // Makes the buffer ready for use again. This will open the pipe for writing
@@ -435,5 +466,8 @@ func (b *BufferPipe) Reset() {
 	} else { // Line buffer
 		b.wrPtr, b.rdPtr = 0, 0
 	}
+	b.err    = nil
 	b.closed = false
+	b.rdCond.Broadcast()
+	b.wrCond.Broadcast()
 }
