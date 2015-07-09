@@ -9,6 +9,7 @@ import "testing"
 import "github.com/stretchr/testify/assert"
 import . "bitbucket.org/rawr/golib/ioutil"
 
+// TODO(jtsai): Finish this!
 func TestSectionWriterOperations(t *testing.T) {
 	_ = NewSectionWriter(io.WriterAt(nil), 0, 0)
 	assert.True(t, true)
