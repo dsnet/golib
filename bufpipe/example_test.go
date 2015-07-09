@@ -122,7 +122,7 @@ func ExampleLineDualPipe() {
 	group.Wait()
 }
 
-func ExampleRingDualPipe() {
+func ExampleRingBlockPipe() {
 	// Intentionally small buffer to show that data written into the buffer
 	// can exceed the size of the buffer itself.
 	buffer := bufpipe.NewBufferPipe(make([]byte, 128), bufpipe.RingBlock)
