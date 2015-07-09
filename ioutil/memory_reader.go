@@ -34,26 +34,25 @@ func (r *MemoryReader) Read(data []byte) (cnt int, err error) {
 	}
 
 	// Top off the input buffer with actual Read() call
-	if len(data) > 0 {
-		var rdCnt int
-		rdCnt, err = r.rd.Read(data)
-		cnt += rdCnt
+	var rdCnt int
+	rdCnt, err = r.rd.Read(data)
+	cnt += rdCnt
 
-		// Write data to ring buffer
-		if len(data) > len(r.buf) {
-			skipCnt := len(data) - len(r.buf)
-			data = data[skipCnt:]
-			r.rdPtr += int64(skipCnt)
-			r.wrPtr += int64(skipCnt)
-		}
-		for len(data) > 0 {
-			off := r.wrPtr % int64(len(r.buf))
-			cpyCnt := copy(r.buf[off:], data)
-			data = data[cpyCnt:]
-			r.rdPtr += int64(cpyCnt)
-			r.wrPtr += int64(cpyCnt)
-		}
+	// Write data to ring buffer
+	if len(data) > len(r.buf) {
+		skipCnt := len(data) - len(r.buf)
+		data = data[skipCnt:]
+		r.rdPtr += int64(skipCnt)
+		r.wrPtr += int64(skipCnt)
 	}
+	for len(data) > 0 {
+		off := r.wrPtr % int64(len(r.buf))
+		cpyCnt := copy(r.buf[off:], data)
+		data = data[cpyCnt:]
+		r.rdPtr += int64(cpyCnt)
+		r.wrPtr += int64(cpyCnt)
+	}
+
 	return cnt, err
 }
 

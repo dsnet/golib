@@ -18,18 +18,17 @@ func NewUndoReader(rd io.Reader, buf []byte) *UndoReader {
 
 func (r *UndoReader) Read(data []byte) (cnt int, err error) {
 	// Pop data off from internal undo stack
-	if len(r.buf) > r.off {
+	if len(data) > 0 && len(r.buf) > r.off {
 		cnt = copy(data, r.buf[r.off:])
 		data = data[cnt:]
 		r.off += cnt
 	}
 
 	// Top off the input buffer with actual Read() call
-	if len(data) > 0 {
-		var rdCnt int
-		rdCnt, err = r.rd.Read(data)
-		cnt += rdCnt
-	}
+	var rdCnt int
+	rdCnt, err = r.rd.Read(data)
+	cnt += rdCnt
+
 	return cnt, err
 }
 
