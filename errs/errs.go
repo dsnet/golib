@@ -5,6 +5,13 @@
 // Package errs implements helpers functions to deal with errors.
 package errs
 
+import "errors"
+
+// Create a new error.
+func New(str string) error {
+	return errors.New(str)
+}
+
 // Panic if the error is not nil.
 func Panic(err error) {
 	if err != nil {
