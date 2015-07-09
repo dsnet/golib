@@ -5,6 +5,7 @@
 package ioutil
 
 import "io"
+import "os"
 import "math"
 import "bitbucket.org/rawr/golib/errs"
 
