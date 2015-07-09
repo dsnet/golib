@@ -40,7 +40,7 @@ func ExampleLineMonoPipe() {
 
 		// In LineMono mode only, it is safe to store a reference to written
 		// data and modify later.
-		header, err := buffer.WriteSlice()
+		header, _, err := buffer.WriteSlices()
 		if err != nil {
 			panic(err)
 		}
@@ -66,9 +66,9 @@ func ExampleLineMonoPipe() {
 	go func() {
 		defer group.Done()
 
-		// In LineMono mode only, a call to ReadSlice() is guaranteed to block
+		// In LineMono mode only, a call to ReadSlices() is guaranteed to block
 		// until the channel is closed. All written data will be made available.
-		data, _ := buffer.ReadSlice()
+		data, _, _ := buffer.ReadSlices()
 		buffer.ReadMark(len(data)) // Technically, this is optional
 
 		fmt.Println(string(data))
@@ -106,8 +106,8 @@ func ExampleLineDualPipe() {
 	go func() {
 		defer group.Done()
 		for {
-			// Reading can be also done using ReadSlice() and ReadMark() pairs.
-			data, err := buffer.ReadSlice()
+			// Reading can be also done using ReadSlices() and ReadMark() pairs.
+			data, _, err := buffer.ReadSlices()
 			if err == io.EOF {
 				break
 			} else if err != nil {

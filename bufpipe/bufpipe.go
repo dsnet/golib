@@ -69,8 +69,8 @@ const (
 type BufferPipe struct {
 	buf    []byte
 	mode   int
-	rdCnt  int64
-	wrCnt  int64
+	rdPtr  int64
+	wrPtr  int64
 	closed bool
 	mutex  sync.Mutex
 	rdCond sync.Cond
@@ -98,6 +98,8 @@ func NewBufferPipe(buf []byte, mode int) *BufferPipe {
 }
 
 // The entire internal buffer. Be careful when touching the raw buffer.
+// Line buffers are always guaranteed to be aligned to be front of the slice.
+// Ring buffers use wrap around logic and could be physically split apart.
 func (b *BufferPipe) GetBuffer() []byte {
 	return b.buf
 }
@@ -105,6 +107,11 @@ func (b *BufferPipe) GetBuffer() []byte {
 // The BufferPipe mode of operation.
 func (b *BufferPipe) GetMode() int {
 	return b.mode
+}
+
+// The internal pointer values.
+func (b *BufferPipe) GetPointers() (rdPtr, wrPtr int64) {
+	return b.rdPtr, b.wrPtr
 }
 
 // The total number of bytes the buffer can store.
@@ -116,12 +123,7 @@ func (b *BufferPipe) Capacity() int {
 func (b *BufferPipe) Length() int {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
-	return int(b.wrCnt - b.rdCnt)
-}
-
-// The internal pointer values.
-func (b *BufferPipe) GetOffsets() (rdCnt, wrCnt int64) {
-	return b.rdCnt, b.wrCnt
+	return int(b.wrPtr - b.rdPtr)
 }
 
 func (b *BufferPipe) writeWait() int {
@@ -129,73 +131,75 @@ func (b *BufferPipe) writeWait() int {
 	isLine := b.mode&Ring == 0
 	isBlock := b.mode&BlockI > 0
 
-	rdCnt := &b.rdCnt
+	rdPtr := &b.rdPtr
 	if isLine {
-		rdCnt = &rdZero // Amount read has no effect on amount available
+		rdPtr = &rdZero // Amount read has no effect on amount available
 	}
 	if isBlock {
-		for !b.closed && len(b.buf) == int(b.wrCnt-(*rdCnt)) {
+		for !b.closed && len(b.buf) == int(b.wrPtr-(*rdPtr)) {
 			b.wrCond.Wait()
 		}
 	}
 	if b.closed {
 		return 0 // Closed buffer is never available
 	}
-	return len(b.buf) - int(b.wrCnt-(*rdCnt))
+	return len(b.buf) - int(b.wrPtr-(*rdPtr))
 }
 
-// Slice of available buffer that can be written to. This does not advance the
-// internal write pointer.
+// Slices of available buffer that can be written to. This does not advance the
+// internal write pointer. All of the available write space is the logical
+// concatenation of the two slices.
 //
-// In linear buffers, the slice obtained is guaranteed to be the entire
+// In linear buffers, the first slice obtained is guaranteed to be the entire
 // available writable buffer slice.
 //
 // In LineMono mode only, slices obtained may still be modified even after
 // WriteMark() has been called and before Close(). This is valid because this
 // mode blocks readers until the buffer has been closed.
 //
-// In ring buffers, the slice obtained may not represent all of the available
-// buffer space since this method always returns contiguous pieces of memory.
-// It is guaranteed to return a non-empty slice if space is available.
+// In ring buffers, the first slice obtained may not represent all of the
+// available buffer space since slices always represent a contiguous pieces of
+// memory. However, the first slice is guaranteed to be a non-empty slice if
+// space is available.
 //
-// In the RingBlock mode, this method blocks until there is available space in
-// the buffer to write. Other modes do not block and will return an empty slice
-// if the buffer is full.
-func (b *BufferPipe) WriteSlice() ([]byte, error) {
+// In the Block mode, this method blocks until there is available space in
+// the buffer to write. Poll mode, on the contrary, will return empty slices if
+// the buffer is full.
+func (b *BufferPipe) WriteSlices() (bufLo, bufHi []byte, err error) {
 	if b == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
-	return b.writeSlice()
+	return b.writeSlices()
 }
 
-func (b *BufferPipe) writeSlice() ([]byte, error) {
+func (b *BufferPipe) writeSlices() (bufLo, bufHi []byte, err error) {
 	availCnt := b.writeWait() // Block until there is available buffer
-	offLo := int(b.wrCnt) % len(b.buf)
+	offLo := int(b.wrPtr) % len(b.buf)
 	offHi := offLo + availCnt
-	if offHi > len(b.buf) { // If available slice is split, take bottom
+	if modCnt := offHi - len(b.buf); modCnt > 0 {
 		offHi = len(b.buf)
+		bufHi = b.buf[:modCnt] // Upper half (possible for Ring)
 	}
-	buf := b.buf[offLo:offHi]
+	bufLo = b.buf[offLo:offHi] // Bottom half (will contain all data for Line)
 
 	// Check error status
-	if len(buf) == 0 {
+	if len(bufLo) == 0 {
+		err = io.ErrShortWrite
 		if b.closed {
-			return buf, io.ErrClosedPipe
-		} else {
-			return buf, io.ErrShortWrite
+			err = io.ErrClosedPipe
 		}
 	}
-	return buf, nil
+	return
 }
 
 // Advances the write pointer.
 //
 // The amount that can be advanced must be non-negative and be less than the
-// length of the slice returned by the previous WriteSlice(). Calls to Write()
+// length of the slices returned by the previous WriteSlices(). Calls to Write()
 // may not be done between these two calls. Also, another call to WriteMark()
-// is invalid until WriteSlice() has been called again.
+// is invalid until WriteSlices() has been called again.
 //
 // If WriteMark() is being used, only one writer routine is allowed.
 func (b *BufferPipe) WriteMark(cnt int) {
@@ -212,7 +216,7 @@ func (b *BufferPipe) writeMark(cnt int) {
 	if cnt < 0 || cnt > availCnt {
 		panic("invalid mark increment value")
 	}
-	b.wrCnt += int64(cnt)
+	b.wrPtr += int64(cnt)
 
 	b.rdCond.Signal()
 }
@@ -223,14 +227,15 @@ func (b *BufferPipe) writeMark(cnt int) {
 // of the buffer. Otherwise, an ErrShortWrite error will be returned.
 //
 // In ring buffers, the length of the data slice may exceed the capacity.
-// The operation will block until all data has been written. If there is no
-// consumer of the data, then this method may block forever.
+//
+// Under Block mode, this operation will block until all data has been written.
+// If there is no consumer of the data, then this method may block forever.
 func (b *BufferPipe) Write(data []byte) (cnt int, err error) {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
 	for cnt < len(data) {
-		buf, err := b.writeSlice()
+		buf, _, err := b.writeSlices()
 		if err != nil {
 			return cnt, err
 		}
@@ -245,10 +250,12 @@ func (b *BufferPipe) Write(data []byte) (cnt int, err error) {
 // Continually read the contents of the reader and write them to the pipe.
 func (b *BufferPipe) ReadFrom(rd io.Reader) (cnt int64, err error) {
 	for {
-		data, wrErr := b.WriteSlice()
-		rdCnt, rdErr := rd.Read(data)
-		b.WriteMark(rdCnt)
-		cnt += int64(rdCnt)
+		b.mutex.Lock()
+		buf, _, wrErr := b.writeSlices()
+		rdPtr, rdErr := rd.Read(buf)
+		b.writeMark(rdPtr)
+		b.mutex.Unlock()
+		cnt += int64(rdPtr)
 
 		switch {
 		case wrErr != nil:
@@ -265,7 +272,7 @@ func (b *BufferPipe) readWait() int {
 	isBlock := b.mode&BlockO > 0
 	isMono := b.mode&Dual == 0
 	if isBlock {
-		for !b.closed && b.rdCnt == b.wrCnt {
+		for !b.closed && b.rdPtr == b.wrPtr {
 			b.rdCond.Wait()
 		}
 		for isMono && !b.closed {
@@ -275,59 +282,61 @@ func (b *BufferPipe) readWait() int {
 	if isMono && !b.closed {
 		return 0
 	}
-	return int(b.wrCnt - b.rdCnt)
+	return int(b.wrPtr - b.rdPtr)
 }
 
-// Slice of valid data that can be read. This does not advance the internal
-// read pointer.
+// Slices of valid data that can be read. This does not advance the internal
+// read pointer. All of the valid readable data is the logical concatenation of
+// the two slices.
 //
-// In linear buffers, the slice obtained is guaranteed to be the entire
+// In linear buffers, the first slice obtained is guaranteed to be the entire
 // valid readable buffer slice.
 //
-// In ring buffers, the slice obtained may not represent all of the valid buffer
-// data since this method always returns contiguous pieces of memory. It is
-// guaranteed to return a non-empty slice if valid data is available.
+// In ring buffers, the first slice obtained may not represent all of the
+// valid buffer data since slices always represent a contiguous pieces of
+// memory. However, the first slice is guaranteed to be a non-empty slice if
+// space is available.
 //
-// In all modes, this method blocks until there is some valid data to read.
-// The LineMono mode is special in that it will block until the buffer has
-// been closed. Other modes just block until some data is available.
-func (b *BufferPipe) ReadSlice() ([]byte, error) {
+// Under the Block mode, this method blocks until there is at least some valid
+// data to read. The Mono mode is special in that, none of the data is
+// considered ready for reading until the writer closes the channel.
+func (b *BufferPipe) ReadSlices() (bufLo, bufHi []byte, err error) {
 	if b == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
-	return b.readSlice()
+	return b.readSlices()
 }
 
-func (b *BufferPipe) readSlice() ([]byte, error) {
+func (b *BufferPipe) readSlices() (bufLo, bufHi []byte, err error) {
 	validCnt := b.readWait() // Block until there is valid buffer
-	offLo := int(b.rdCnt) % len(b.buf)
+	offLo := int(b.rdPtr) % len(b.buf)
 	offHi := offLo + validCnt
-	if offHi > len(b.buf) { // If valid slice is split, take bottom
+	if modCnt := offHi - len(b.buf); modCnt > 0 {
 		offHi = len(b.buf)
+		bufHi = b.buf[:modCnt] // Upper half (possible for Ring)
 	}
-	buf := b.buf[offLo:offHi] // Linear and ring buffers
+	bufLo = b.buf[offLo:offHi] // Bottom half (will contain all data for Line)
 
 	// Check error status.
-	if len(buf) == 0 {
+	if len(bufLo) == 0 {
+		err = io.ErrNoProgress
 		if b.closed {
-			return buf, io.EOF
-		} else {
-			return buf, io.ErrNoProgress
+			err = io.EOF
 		}
 	}
-	return buf, nil
+	return
 }
 
 // Advances the read pointer.
 //
 // The amount that can be advanced must be non-negative and be less than the
-// length of the slice returned by the previous ReadSlice(). Calls to Read() may
-// not be done between these two calls. Also, another call to ReadMark() is
-// invalid until ReadSlice() has been called again.
+// length of the slices returned by the previous ReadSlices(). Calls to Read()
+// may not be done between these two calls. Also, another call to ReadMark() is
+// invalid until ReadSlices() has been called again.
 //
-// If ReadMark() is being used, only one writer routine is allowed.
+// If ReadMark() is being used, only one reader routine is allowed.
 func (b *BufferPipe) ReadMark(cnt int) {
 	if b == nil && cnt == 0 {
 		return
@@ -342,7 +351,7 @@ func (b *BufferPipe) readMark(cnt int) {
 	if cnt < 0 || cnt > validCnt {
 		panic("invalid mark increment value")
 	}
-	b.rdCnt += int64(cnt)
+	b.rdPtr += int64(cnt)
 
 	b.wrCond.Signal()
 }
@@ -351,14 +360,15 @@ func (b *BufferPipe) readMark(cnt int) {
 //
 // In all modes, the length of the data slice may exceed the capacity of
 // the buffer. The operation will block until all data has been read or until
-// the EOF is hit. If there is no producer of the data, then this method may
-// block forever.
+// the EOF is hit.
+//
+// Under Block mode, this method may block forever if there is no producer.
 func (b *BufferPipe) Read(data []byte) (cnt int, err error) {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
 	for cnt < len(data) {
-		buf, err := b.readSlice()
+		buf, _, err := b.readSlices()
 		if err != nil {
 			return cnt, err
 		}
@@ -373,10 +383,12 @@ func (b *BufferPipe) Read(data []byte) (cnt int, err error) {
 // Continually read the contents of the pipe and write them to the writer.
 func (b *BufferPipe) WriteTo(wr io.Writer) (cnt int64, err error) {
 	for {
-		data, rdErr := b.ReadSlice()
-		wrCnt, wrErr := wr.Write(data)
-		b.ReadMark(wrCnt)
-		cnt += int64(wrCnt)
+		b.mutex.Lock()
+		data, _, rdErr := b.readSlices()
+		wrPtr, wrErr := wr.Write(data)
+		b.readMark(wrPtr)
+		b.mutex.Unlock()
+		cnt += int64(wrPtr)
 
 		switch {
 		case wrErr != nil:
@@ -393,7 +405,7 @@ func (b *BufferPipe) WriteTo(wr io.Writer) (cnt int64, err error) {
 //
 // All write operations have no effect after this, while all read operations
 // will drain remaining data in the buffer. This operation is somewhat similar
-// to how Go channels operation.
+// to how Go channels operate.
 //
 // Writers should close the buffer to indicate to readers to mark end-of-stream.
 //
@@ -409,13 +421,19 @@ func (b *BufferPipe) Close() error {
 	return nil
 }
 
-// Makes the buffer ready for use again.
-//
-// Resetting when readers or writers are still using the pipe results in
-// undefined behavior.
+// Makes the buffer ready for use again. This will open the pipe for writing
+// again. For Line buffers, both pointers are set to zero. For Ring buffers, the
+// write pointer is set to the read pointer, and both are modded by the buffer
+// length. This effectively makes the valid length zero, but allows a writer to
+// immediately call MarkWrite() and reclaim previously written data.
 func (b *BufferPipe) Reset() {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
-	b.wrCnt, b.rdCnt = 0, 0
+	if b.mode & Ring > 0 { // Ring buffer
+		b.rdPtr %= int64(len(b.buf))
+		b.wrPtr = b.rdPtr
+	} else { // Line buffer
+		b.wrPtr, b.rdPtr = 0, 0
+	}
 	b.closed = false
 }
