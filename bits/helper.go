@@ -72,7 +72,7 @@ func SetN(data []byte, val uint, cnt, ofs int) {
 	}
 }
 
-// Count the number of zeros and ones in the slice.
+// Count the number of zero bits and one bits in the slice.
 func Count(data []byte) (zeros, ones int) {
 	for _, val := range data {
 		for idx := 0; idx < 8 && val > 0; idx++ {
