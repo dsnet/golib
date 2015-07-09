@@ -12,6 +12,8 @@ import "sync"
 // interface. Concurrent ReadAt operations are permitted due to the use of a
 // mutex to ensure synchronization. However, any regular Read and Seek calls
 // must also be made through this class to ensure safe concurrent action.
+// Any other operations that alter the internal offset pointer must be protected
+// via the L mutex.
 type ReaderAt struct {
 	io.ReadSeeker
 	L *sync.Mutex

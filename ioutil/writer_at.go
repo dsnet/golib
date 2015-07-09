@@ -12,6 +12,8 @@ import "sync"
 // interface. Concurrent WriteAt operations are permitted due to the use of a
 // mutex to ensure synchronization. However, any regular Write and Seek calls
 // must also be made through this class to ensure safe concurrent action.
+// Any other operations that alter the internal offset pointer must be protected
+// via the L mutex.
 type WriterAt struct {
 	io.WriteSeeker
 	L *sync.Mutex
