@@ -109,15 +109,10 @@ func ReverseUintN(val uint, num int) uint {
 	return val
 }
 
-// Read num bits from br in LSB order. That is, the first bits read from br are
-// packed into val as the LSB. The behavior is undefined if a read is attempted
-// on more bits than fits in an uint.
-//
-// If an error is encountered while reading a bit, then an error will be
-// returned along with the number of bits read thus far. The error returned will
-// be io.EOF only if the cnt is 0. Otherwise, io.ErrUnexpectedEOF will be used.
-// This is done to match the behavior of io.ReadFull.
+// This function allows a BitReader to easily satisfy the BitsReader interface.
 func ReadBits(br BitReader, num int) (val uint, cnt int, err error) {
+	// Since br.ReadBit is called fairly often and function calls become a
+	// bottleneck, this logic is manually inlined in other bit readers.
 	var bit bool
 	for cnt = 0; cnt < num; cnt++ {
 		if bit, err = br.ReadBit(); err != nil {
@@ -131,13 +126,10 @@ func ReadBits(br BitReader, num int) (val uint, cnt int, err error) {
 	return
 }
 
-// Write num bits to bw in LSB order. That is, the LSB bits of val will be the
-// first bits to be written to bw. The behavior is undefined if a read is
-// attempted on more bits than fits in an uint.
-//
-// If an error is encountered while writing a bit, then an error will be
-// returned along with the number of bits written thus far.
+// This function allows a BitWriter to easily satisfy the BitsWriter interface.
 func WriteBits(bw BitWriter, val uint, num int) (cnt int, err error) {
+	// Since bw.WriteBit is called fairly often and function calls become a
+	// bottleneck, this logic is manually inlined in other bit writers.
 	var bit bool
 	for cnt = 0; cnt < num; cnt++ {
 		bit = Itob(val & (1 << uint(cnt)))
