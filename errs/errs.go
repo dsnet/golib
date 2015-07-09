@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE.md file.
 
-// Package err implements helpers functions to deal with errors.
-package err
+// Package errs implements helpers functions to deal with errors.
+package errs
 
 // Panic if the error is not nil.
 func Panic(err error) {
