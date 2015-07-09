@@ -96,3 +96,25 @@ func TestWriter(t *testing.T) {
 	assert.Equal(t, 0, bw.BytesWritten())
 	assert.Equal(t, 0, bw.BitsWritten())
 }
+
+func BenchmarkWriter(b *testing.B) {
+	cnt := 1 << 20 // 1 MiB
+	buf := bytes.NewBuffer(nil)
+	bw := NewWriter(buf)
+
+	b.SetBytes(int64(cnt))
+	b.ResetTimer()
+
+	for ni := 0; ni < b.N; ni++ {
+		for bi := 0; bi < cnt; bi++ {
+			bw.WriteBit(true)
+			bw.WriteBit(false)
+			bw.WriteBit(true)
+			bw.WriteBit(false)
+			bw.WriteBit(true)
+			bw.WriteBit(false)
+			bw.WriteBit(true)
+			bw.WriteBit(false)
+		}
+	}
+}

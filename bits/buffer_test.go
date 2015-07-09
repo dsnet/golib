@@ -136,5 +136,50 @@ func TestBuffer(t *testing.T) {
 	assert.Equal(t, true, bb.WriteAligned())
 	assert.Equal(t, 8, bb.BitsRead())
 	assert.Equal(t, 8, bb.BitsWritten())
+}
 
+func BenchmarkBufferWriter(b *testing.B) {
+	cnt := 1 << 20 // 1 MiB
+	bb := NewBuffer(nil)
+
+	b.SetBytes(int64(cnt))
+	b.ResetTimer()
+
+	for ni := 0; ni < b.N; ni++ {
+		for bi := 0; bi < cnt; bi++ {
+			bb.WriteBit(true)
+			bb.WriteBit(false)
+			bb.WriteBit(true)
+			bb.WriteBit(false)
+			bb.WriteBit(true)
+			bb.WriteBit(false)
+			bb.WriteBit(true)
+			bb.WriteBit(false)
+		}
+	}
+}
+
+func BenchmarkBufferReader(b *testing.B) {
+	cnt := 1 << 20 // 1 MiB
+	data := make([]byte, cnt)
+	for i := range data {
+		data[i] = 0x55
+	}
+	bb := NewBuffer(data)
+
+	b.SetBytes(int64(cnt))
+	b.ResetTimer()
+
+	for ni := 0; ni < b.N; ni++ {
+		for bi := 0; bi < cnt; bi++ {
+			bb.ReadBit()
+			bb.ReadBit()
+			bb.ReadBit()
+			bb.ReadBit()
+			bb.ReadBit()
+			bb.ReadBit()
+			bb.ReadBit()
+			bb.ReadBit()
+		}
+	}
 }

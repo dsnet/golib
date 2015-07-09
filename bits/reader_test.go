@@ -103,3 +103,29 @@ func TestReader(t *testing.T) {
 	assert.Equal(t, 0, br.BytesRead())
 	assert.Equal(t, 0, br.BitsRead())
 }
+
+func BenchmarkReader(b *testing.B) {
+	cnt := 1 << 20 // 1 MiB
+	data := make([]byte, cnt)
+	for i := range data {
+		data[i] = 0x55
+	}
+	buf := bytes.NewBuffer(data)
+	br := NewReader(buf)
+
+	b.SetBytes(int64(cnt))
+	b.ResetTimer()
+
+	for ni := 0; ni < b.N; ni++ {
+		for bi := 0; bi < cnt; bi++ {
+			br.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
+		}
+	}
+}
