@@ -16,13 +16,17 @@ func NewLimitedWriter(wr io.Writer, cnt int64) io.Writer {
 }
 
 func (l *LimitedWriter) Write(data []byte) (cnt int, err error) {
-	realCnt := len(data)
-	if int64(len(data)) > l.N {
-		data = data[:l.N]
+	inCnt := len(data)
+	if int64(inCnt) > l.N {
+		inCnt = l.N
 	}
-	cnt, err = l.W.Write(data)
-	if err == nil && cnt < realCnt {
+	if l.N < 0 {
+		inCnt = 0
+	}
+	cnt, err = l.W.Write(data[:inCnt])
+	if err == nil && cnt < len(data) {
 		err = io.ErrShortWrite
 	}
+	l.N -= cnt
 	return
 }
