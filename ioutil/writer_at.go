@@ -15,13 +15,13 @@ import "sync"
 // Any other operations that alter the internal offset pointer must be protected
 // via the L mutex.
 type WriterAt struct {
-	io.WriteSeeker
+	W io.WriteSeeker
 	L *sync.Mutex
 }
 
 // Create a new WriterAt from the given WriteSeeker.
-func NewWriterAt(rd io.WriteSeeker) *WriterAt {
-	return &WriterAt{rd, new(sync.Mutex)}
+func NewWriterAt(wr io.WriteSeeker) *WriterAt {
+	return &WriterAt{W: wr}
 }
 
 func (w *WriterAt) WriteAt(data []byte, off int64) (cnt int, err error) {
@@ -29,11 +29,11 @@ func (w *WriterAt) WriteAt(data []byte, off int64) (cnt int, err error) {
 	defer w.L.Unlock()
 
 	var pos int64
-	if pos, err = w.Seek(off, os.SEEK_SET); err != nil {
+	if pos, err = w.W.Seek(off, os.SEEK_SET); err != nil {
 		return
 	}
 	defer func() {
-		if _, skErr := w.Seek(pos, os.SEEK_SET); skErr != nil {
+		if _, skErr := w.W.Seek(pos, os.SEEK_SET); skErr != nil {
 			err = skErr
 		}
 	}()
@@ -44,11 +44,11 @@ func (w *WriterAt) WriteAt(data []byte, off int64) (cnt int, err error) {
 func (w *WriterAt) Write(data []byte) (cnt int, err error) {
 	w.L.Lock()
 	defer w.L.Unlock()
-	return w.WriteSeeker.Write(data)
+	return w.W.Write(data)
 }
 
 func (w *WriterAt) Seek(off int64, whence int) (int64, error) {
 	w.L.Lock()
 	defer w.L.Unlock()
-	return w.WriteSeeker.Seek(off, whence)
+	return w.W.Seek(off, whence)
 }
