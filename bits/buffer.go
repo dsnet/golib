@@ -69,11 +69,12 @@ func (b *Buffer) ReadByte() (val byte, err error) {
 	if b.rdMask != 0x00 {
 		return val, ErrAlign
 	}
-	if b.off == len(b.buf) {
-		if b.wrMask != 0x00 {
-			return val, ErrAlign
-		}
-		return val, io.EOF
+	blen, berr := len(b.buf), io.EOF
+	if b.wrMask != 0x00 {
+		blen, berr = blen-1, ErrAlign
+	}
+	if b.off == blen {
+		return val, berr
 	}
 	val = b.buf[b.off]
 	b.off++
@@ -89,14 +90,14 @@ func (b *Buffer) Read(buf []byte) (cnt int, err error) {
 	if b.rdMask != 0x00 {
 		return cnt, ErrAlign
 	}
-	buf2, err2 := b.buf, io.EOF
+	bbuf, berr := b.buf[b.off:], io.EOF
 	if b.wrMask != 0x00 {
-		buf2, err2 = buf2[:len(buf2)-1], ErrAlign
+		bbuf, berr = bbuf[:len(bbuf)-1], ErrAlign
 	}
-	cnt = copy(buf, buf2)
+	cnt = copy(buf, bbuf)
 	b.off += cnt
 	if cnt != len(buf) {
-		err = err2
+		err = berr
 	}
 	return
 }
