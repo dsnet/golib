@@ -5,20 +5,19 @@
 package ioutil_test
 
 import "io"
-import "bytes"
 import "testing"
 import "github.com/stretchr/testify/assert"
 import . "bitbucket.org/rawr/golib/ioutil"
 
 func TestLimitedWriterOperations(t *testing.T) {
-	var w *bytes.Buffer
+	var w *Buffer
 	var wr io.Writer
 	var cnt int
 	var err error
 	data := make([]byte, 64)
 
 	// Negative limit
-	w = new(bytes.Buffer)
+	w = NewBuffer(nil)
 	wr = NewLimitedWriter(w, -1)
 
 	cnt, err = wr.Write(data)
@@ -26,7 +25,7 @@ func TestLimitedWriterOperations(t *testing.T) {
 	assert.Equal(t, err, io.ErrShortWrite)
 
 	// Zero limit
-	w = new(bytes.Buffer)
+	w = NewBuffer(nil)
 	wr = NewLimitedWriter(w, 0)
 
 	cnt, err = wr.Write(data)
@@ -34,7 +33,7 @@ func TestLimitedWriterOperations(t *testing.T) {
 	assert.Equal(t, err, io.ErrShortWrite)
 
 	// Positive limit
-	w = new(bytes.Buffer)
+	w = NewBuffer(nil)
 	wr = NewLimitedWriter(w, 5)
 
 	cnt, err = wr.Write([]byte("hello, world!"))
@@ -43,7 +42,7 @@ func TestLimitedWriterOperations(t *testing.T) {
 	assert.Equal(t, string(w.Bytes()), "hello")
 
 	// Multiple writes
-	w = new(bytes.Buffer)
+	w = NewBuffer(nil)
 	wr = NewLimitedWriter(w, 12)
 
 	cnt, err = wr.Write([]byte("hello"))
