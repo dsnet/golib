@@ -16,7 +16,7 @@ import "errors"
 //
 // For most use cases, the UndoReader is probably sufficient and much simpler
 // to use. The major use case of MemoryReader over UndoReader is when the data
-// read is not available, and thus cannot be fed into the UndoRead() method.
+// read is not available, and thus cannot be fed into the UndoRead method.
 // Since MemoryReader records all data that is read, this is not an issue.
 type MemoryReader struct {
 	rd    io.Reader
@@ -48,7 +48,7 @@ func (r *MemoryReader) Read(data []byte) (cnt int, err error) {
 		r.rdPtr += int64(cpyCnt)
 	}
 
-	// Top off the input buffer with actual Read() call
+	// Top off the input buffer with actual Read call
 	var rdCnt int
 	rdCnt, err = r.rd.Read(data)
 	data = data[:rdCnt]

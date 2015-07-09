@@ -19,12 +19,13 @@ type Writer struct {
 	idx int64
 }
 
-// NewReader returns a new Reader writing to buf.
+// NewWriter returns a new Reader writing to buf.
 func NewWriter(buf []byte) *Writer {
 	return &Writer{buf, 0}
 }
 
 // Len returns the number of bytes that have been written to the slice.
+// Specifically, this the current write pointer position.
 func (w *Writer) Len() int {
 	if w.idx > int64(len(w.buf)) {
 		return len(w.buf)

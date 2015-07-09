@@ -33,7 +33,7 @@ func (r *UndoReader) Read(data []byte) (cnt int, err error) {
 		r.off += cnt
 	}
 
-	// Top off the input buffer with actual Read() call
+	// Top off the input buffer with actual Read call
 	var rdCnt int
 	rdCnt, err = r.rd.Read(data)
 	cnt += rdCnt
