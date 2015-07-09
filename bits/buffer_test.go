@@ -8,15 +8,6 @@ import "io"
 import "testing"
 import "github.com/stretchr/testify/assert"
 
-// Helper test function that converts any empty byte slice to the nil slice so
-// that equality checks work out fine.
-func nb(buf []byte) []byte {
-	if len(buf) == 0 {
-		return nil
-	}
-	return buf
-}
-
 func TestBuffer(t *testing.T) {
 	var bit bool
 	var val uint
