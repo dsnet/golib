@@ -6,8 +6,10 @@ package ioutil
 
 import "io"
 
-type SectionReader io.SectionReader
+type SectionReader struct {
+	*io.SectionReader
+}
 
 func NewSectionReader(rd io.ReaderAt, off int64, cnt int64) *SectionReader {
-	return (*SectionReader)(io.NewSectionReader(rd, off, cnt))
+	return &SectionReader{io.NewSectionReader(rd, off, cnt)}
 }

@@ -6,8 +6,10 @@ package ioutil
 
 import "bytes"
 
-type Reader bytes.Reader
+type Reader struct {
+	*bytes.Reader
+}
 
 func NewReader(data []byte) *Reader {
-	return (*Reader)(bytes.NewReader(data))
+	return &Reader{bytes.NewReader(data)}
 }

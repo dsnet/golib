@@ -6,8 +6,12 @@ package ioutil
 
 import "io"
 
-type LimitedReader io.LimitedReader
+type LimitedReader struct {
+	*io.LimitedReader
+}
 
 func NewLimitedReader(rd io.Reader, cnt int64) io.Reader {
-	return io.LimitReader(rd, cnt)
+	r := io.LimitReader(rd, cnt)
+	rl := r.(*io.LimitedReader)
+	return &LimitedReader{rl}
 }
