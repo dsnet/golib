@@ -2,12 +2,20 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE.md file.
 
+// Package ioutil is a collection of small io related implementations.
 package ioutil
 
 import "io"
 import "os"
 import "math"
 import "bitbucket.org/rawr/golib/errs"
+
+// Define constants for seeking here so that package os is not needed as well.
+const (
+	SeekCur = os.SEEK_CUR
+	SeekSet = os.SEEK_SET
+	SeekEnd = os.SEEK_END
+)
 
 // Determine the size of a ReaderAt using a binary search. Given that file
 // offsets are no larger than int64, there is an upper limit of 64 iterations
@@ -49,14 +57,71 @@ func ReaderAtSize(rd io.ReaderAt) (pos int64, err error) {
 // attempt to bring the file pointer back to the original location.
 func SeekerSize(sk io.Seeker) (pos int64, err error) {
 	var curPos int64
-	if curPos, err = sk.Seek(0, os.SEEK_CUR); err != nil {
+	if curPos, err = sk.Seek(0, SeekCur); err != nil {
 		return
 	}
-	if pos, err = sk.Seek(0, os.SEEK_END); err != nil {
+	if pos, err = sk.Seek(0, SeekEnd); err != nil {
 		return
 	}
-	if _, err = sk.Seek(curPos, os.SEEK_SET); err != nil {
+	if _, err = sk.Seek(curPos, SeekSet); err != nil {
 		return
+	}
+	return
+}
+
+// Performs like io.ReadFull, but uses a ByteReader instead.
+func ByteReadFull(rd io.ByteReader, buf []byte) (cnt int, err error) {
+	for cnt = 0; cnt < len(buf); cnt++ {
+		buf[cnt], err = rd.ReadByte()
+		if err == io.EOF && cnt > 0 {
+			err = io.ErrUnexpectedEOF
+		}
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+// Allows multiple bytes to be written to a buffer like io.Write.
+func ByteWriteFull(wr io.ByteWriter, buf []byte) (cnt int, err error) {
+	for cnt = 0; cnt < len(buf); cnt++ {
+		err = wr.WriteByte(buf[cnt])
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func ByteCopy(dst io.ByteWriter, src io.ByteReader) (cnt int64, err error) {
+	var val byte
+	for cnt = 0; true; cnt++ {
+		if val, err = src.ReadByte(); err != nil {
+			break
+		}
+		if err = dst.WriteByte(val); err != nil {
+			break
+		}
+	}
+	if err == io.EOF { // This is expected
+		err = nil
+	}
+	return
+}
+
+func ByteCopyN(dst io.ByteWriter, src io.ByteReader, num int64) (cnt int64, err error) {
+	var val byte
+	for cnt = 0; cnt < num; cnt++ {
+		if val, err = src.ReadByte(); err != nil {
+			break
+		}
+		if err = dst.WriteByte(val); err != nil {
+			break
+		}
+	}
+	if cnt == num { // This is expected
+		err = nil
 	}
 	return
 }
