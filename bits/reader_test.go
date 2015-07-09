@@ -6,6 +6,7 @@ package bits
 
 import "io"
 import "bytes"
+import "runtime"
 import "testing"
 import "github.com/stretchr/testify/assert"
 
@@ -115,6 +116,7 @@ func BenchmarkReader(b *testing.B) {
 	buf := NewBuffer(data)
 	br := NewReader(buf)
 
+	runtime.GC()
 	b.ReportAllocs()
 	b.SetBytes(int64(cnt))
 	b.ResetTimer()

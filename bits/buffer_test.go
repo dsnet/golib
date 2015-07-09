@@ -5,6 +5,7 @@
 package bits
 
 import "io"
+import "runtime"
 import "testing"
 import "github.com/stretchr/testify/assert"
 
@@ -193,6 +194,7 @@ func BenchmarkBufferWriter(b *testing.B) {
 	cnt := 1 << 20 // 1 MiB
 	bb := NewBuffer(make([]byte, 0, cnt))
 
+	runtime.GC()
 	b.ReportAllocs()
 	b.SetBytes(int64(cnt))
 	b.ResetTimer()

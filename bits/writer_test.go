@@ -6,6 +6,7 @@ package bits
 
 import "io"
 import "bytes"
+import "runtime"
 import "testing"
 import "github.com/stretchr/testify/assert"
 
@@ -105,6 +106,7 @@ func BenchmarkWriter(b *testing.B) {
 	buf := NewBuffer(make([]byte, 0, cnt))
 	bw := NewWriter(buf)
 
+	runtime.GC()
 	b.ReportAllocs()
 	b.SetBytes(int64(cnt))
 	b.ResetTimer()
