@@ -177,7 +177,10 @@ func (b *BufferPipe) WriteSlices() (bufLo, bufHi []byte, err error) {
 
 func (b *BufferPipe) writeSlices() (bufLo, bufHi []byte, err error) {
 	availCnt := b.writeWait() // Block until there is available buffer
-	offLo := int(b.wrPtr) % len(b.buf)
+	offLo := 0
+	if len(b.buf) > 0 { // Prevent division by zero
+		offLo = int(b.wrPtr) % len(b.buf)
+	}
 	offHi := offLo + availCnt
 	if modCnt := offHi - len(b.buf); modCnt > 0 {
 		offHi = len(b.buf)
@@ -316,7 +319,10 @@ func (b *BufferPipe) ReadSlices() (bufLo, bufHi []byte, err error) {
 
 func (b *BufferPipe) readSlices() (bufLo, bufHi []byte, err error) {
 	validCnt := b.readWait() // Block until there is valid buffer
-	offLo := int(b.rdPtr) % len(b.buf)
+	offLo := 0
+	if len(b.buf) > 0 { // Prevent division by zero
+		offLo = int(b.rdPtr) % len(b.buf)
+	}
 	offHi := offLo + validCnt
 	if modCnt := offHi - len(b.buf); modCnt > 0 {
 		offHi = len(b.buf)
