@@ -5,6 +5,7 @@
 package bits
 
 import "testing"
+import "github.com/stretchr/testify/assert"
 
 // Helper test function that converts any empty byte slice to the nil slice so
 // that equality checks work out fine.
@@ -15,10 +16,15 @@ func nb(buf []byte) []byte {
 	return buf
 }
 
-func TestInterfaces(_ *testing.T) {
-	// These should compile just fine.
-	var _ BitsReader = NewReader(nil)
-	var _ BitsWriter = NewWriter(nil)
-	var _ BitsReader = NewBuffer(nil)
-	var _ BitsWriter = NewBuffer(nil)
+func TestInterfaces(t *testing.T) {
+	var ok bool
+
+	_, ok = interface{}(NewReader(nil)).(BitsReader)
+	assert.True(t, ok)
+	_, ok = interface{}(NewWriter(nil)).(BitsWriter)
+	assert.True(t, ok)
+	_, ok = interface{}(NewBuffer(nil)).(BitsReader)
+	assert.True(t, ok)
+	_, ok = interface{}(NewBuffer(nil)).(BitsWriter)
+	assert.True(t, ok)
 }

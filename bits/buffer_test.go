@@ -46,7 +46,7 @@ func TestBuffer(t *testing.T) {
 	assert.Equal(t, X{false, false, 1, 1, []byte{0x01}}, state(bb))
 
 	_, err = bb.ReadBit()
-	assert.Equal(t, err, io.EOF)
+	assert.Equal(t, io.EOF, err)
 	assert.Equal(t, X{false, false, 1, 1, []byte{0x01}}, state(bb))
 
 	err = bb.WriteBit(true)
