@@ -122,7 +122,7 @@ func BenchmarkReader(b *testing.B) {
 	b.ResetTimer()
 
 	for ni := 0; ni < b.N; ni++ {
-		buf.ResetData(data)
+		buf.ResetBuffer(data)
 		br.Reset(buf)
 		for bi := 0; bi < cnt; bi++ {
 			br.ReadBit()

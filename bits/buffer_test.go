@@ -180,7 +180,7 @@ func TestBuffer(t *testing.T) {
 	assert.Equal(t, X{true, true, 0, 0, nil}, state(bb))
 
 	// Reset with data
-	bb.ResetData([]byte{0xab, 0xcd, 0xef})
+	bb.ResetBuffer([]byte{0xab, 0xcd, 0xef})
 	assert.Equal(t, X{true, true, 0, 24, []byte{0xab, 0xcd, 0xef}}, state(bb))
 
 	cnt, err = bb.Read(buf[:])
@@ -228,7 +228,7 @@ func BenchmarkBufferReader(b *testing.B) {
 	b.ResetTimer()
 
 	for ni := 0; ni < b.N; ni++ {
-		bb.ResetData(data)
+		bb.ResetBuffer(data)
 		for bi := 0; bi < cnt; bi++ {
 			bb.ReadBit()
 			bb.ReadBit()

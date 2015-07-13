@@ -200,7 +200,7 @@ func (b *Buffer) Reset() {
 }
 
 // Reset the buffer so that it uses the input data.
-func (b *Buffer) ResetData(data []byte) {
+func (b *Buffer) ResetBuffer(data []byte) {
 	b.Reset()
 	b.buf = data
 }
