@@ -17,14 +17,8 @@ func nb(buf []byte) []byte {
 }
 
 func TestInterfaces(t *testing.T) {
-	var ok bool
-
-	_, ok = interface{}(NewReader(nil)).(BitsReader)
-	assert.True(t, ok)
-	_, ok = interface{}(NewWriter(nil)).(BitsWriter)
-	assert.True(t, ok)
-	_, ok = interface{}(NewBuffer(nil)).(BitsReader)
-	assert.True(t, ok)
-	_, ok = interface{}(NewBuffer(nil)).(BitsWriter)
-	assert.True(t, ok)
+	assert.Implements(t, (*BitsReader)(nil), NewReader(nil))
+	assert.Implements(t, (*BitsWriter)(nil), NewWriter(nil))
+	assert.Implements(t, (*BitsReader)(nil), NewBuffer(nil))
+	assert.Implements(t, (*BitsWriter)(nil), NewBuffer(nil))
 }
