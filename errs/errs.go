@@ -5,6 +5,7 @@
 // Package errs implements helpers functions to deal with errors.
 package errs
 
+import "runtime"
 import "errors"
 
 // Create a new error.
@@ -22,16 +23,20 @@ func Panic(err error) {
 // Recovers from any panics and stores errors to the given pointer. If the
 // source of the panic was not an error, then the panic continues.
 func Recover(err *error) {
-	if ex := recover(); ex != nil {
-		if _err, ok := ex.(error); ok {
-			(*err) = _err
-		} else {
-			panic(ex)
-		}
+	switch ex := recover().(type) {
+	case nil:
+		// Do nothing
+	case runtime.Error:
+		panic(ex)
+	case error:
+		*err = ex
+	default:
+		panic(ex)
 	}
 }
 
 // Recovers from any panics and ignores them.
+// This is dangerous and should be used sparingly.
 func NilRecover() {
 	_ = recover()
 }
