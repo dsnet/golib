@@ -115,6 +115,7 @@ func BenchmarkReader(b *testing.B) {
 	}
 	buf := NewBuffer(data)
 	br := NewReader(buf)
+	brr := BitReader(br)
 
 	runtime.GC()
 	b.ReportAllocs()
@@ -125,14 +126,14 @@ func BenchmarkReader(b *testing.B) {
 		buf.ResetBuffer(data)
 		br.Reset(buf)
 		for bi := 0; bi < cnt; bi++ {
-			br.ReadBit()
-			br.ReadBit()
-			br.ReadBit()
-			br.ReadBit()
-			br.ReadBit()
-			br.ReadBit()
-			br.ReadBit()
-			br.ReadBit()
+			brr.ReadBit()
+			brr.ReadBit()
+			brr.ReadBit()
+			brr.ReadBit()
+			brr.ReadBit()
+			brr.ReadBit()
+			brr.ReadBit()
+			brr.ReadBit()
 		}
 	}
 }

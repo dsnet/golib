@@ -193,6 +193,7 @@ func TestBuffer(t *testing.T) {
 func BenchmarkBufferWriter(b *testing.B) {
 	cnt := 1 << 20 // 1 MiB
 	bb := NewBuffer(make([]byte, 0, cnt))
+	bw := BitWriter(bb)
 
 	runtime.GC()
 	b.ReportAllocs()
@@ -202,14 +203,14 @@ func BenchmarkBufferWriter(b *testing.B) {
 	for ni := 0; ni < b.N; ni++ {
 		bb.Reset()
 		for bi := 0; bi < cnt; bi++ {
-			bb.WriteBit(true)
-			bb.WriteBit(false)
-			bb.WriteBit(true)
-			bb.WriteBit(false)
-			bb.WriteBit(true)
-			bb.WriteBit(false)
-			bb.WriteBit(true)
-			bb.WriteBit(false)
+			bw.WriteBit(true)
+			bw.WriteBit(false)
+			bw.WriteBit(true)
+			bw.WriteBit(false)
+			bw.WriteBit(true)
+			bw.WriteBit(false)
+			bw.WriteBit(true)
+			bw.WriteBit(false)
 		}
 	}
 }
@@ -221,6 +222,7 @@ func BenchmarkBufferReader(b *testing.B) {
 		data[i] = 0x55
 	}
 	bb := NewBuffer(data)
+	br := BitReader(bb)
 
 	runtime.GC()
 	b.ReportAllocs()
@@ -230,14 +232,14 @@ func BenchmarkBufferReader(b *testing.B) {
 	for ni := 0; ni < b.N; ni++ {
 		bb.ResetBuffer(data)
 		for bi := 0; bi < cnt; bi++ {
-			bb.ReadBit()
-			bb.ReadBit()
-			bb.ReadBit()
-			bb.ReadBit()
-			bb.ReadBit()
-			bb.ReadBit()
-			bb.ReadBit()
-			bb.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
+			br.ReadBit()
 		}
 	}
 }

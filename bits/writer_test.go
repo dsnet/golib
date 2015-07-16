@@ -105,6 +105,7 @@ func BenchmarkWriter(b *testing.B) {
 	cnt := 1 << 20 // 1 MiB
 	buf := NewBuffer(make([]byte, 0, cnt))
 	bw := NewWriter(buf)
+	bww := BitWriter(bw)
 
 	runtime.GC()
 	b.ReportAllocs()
@@ -115,14 +116,14 @@ func BenchmarkWriter(b *testing.B) {
 		buf.Reset()
 		bw.Reset(buf)
 		for bi := 0; bi < cnt; bi++ {
-			bw.WriteBit(true)
-			bw.WriteBit(false)
-			bw.WriteBit(true)
-			bw.WriteBit(false)
-			bw.WriteBit(true)
-			bw.WriteBit(false)
-			bw.WriteBit(true)
-			bw.WriteBit(false)
+			bww.WriteBit(true)
+			bww.WriteBit(false)
+			bww.WriteBit(true)
+			bww.WriteBit(false)
+			bww.WriteBit(true)
+			bww.WriteBit(false)
+			bww.WriteBit(true)
+			bww.WriteBit(false)
 		}
 	}
 }
