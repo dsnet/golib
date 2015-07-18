@@ -21,7 +21,8 @@ func Panic(err error) {
 }
 
 // Recovers from any panics and stores errors to the given pointer. If the
-// source of the panic was not an error, then the panic continues.
+// source of the panic was not a Runtime error or an error at all, then the
+// panic continues.
 func Recover(err *error) {
 	switch ex := recover().(type) {
 	case nil:
