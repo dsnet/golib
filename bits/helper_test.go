@@ -192,6 +192,19 @@ func TestCountUint(t *testing.T) {
 	assert.Equal(t, NumUintBits, CountUint(MaxUint))
 }
 
+func TestReverseByte(t *testing.T) {
+	assert.Equal(t, byte(0x00), ReverseByte(0x00))
+	assert.Equal(t, byte(0x37), ReverseByte(0xec))
+	assert.Equal(t, byte(0x9c), ReverseByte(0x39))
+	assert.Equal(t, byte(0x88), ReverseByte(0x11))
+	assert.Equal(t, byte(0x8e), ReverseByte(0x71))
+	assert.Equal(t, byte(0xaa), ReverseByte(0x55))
+	assert.Equal(t, byte(0x3a), ReverseByte(0x5c))
+	assert.Equal(t, byte(0x2f), ReverseByte(0xf4))
+	assert.Equal(t, byte(0xd3), ReverseByte(0xcb))
+	assert.Equal(t, byte(0xff), ReverseByte(0xff))
+}
+
 func TestReverseUint(t *testing.T) {
 	assert.Equal(t, uint(0), ReverseUint(0))
 	assert.Equal(t, MaxUint, ReverseUint(MaxUint))
