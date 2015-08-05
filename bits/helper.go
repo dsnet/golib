@@ -165,6 +165,26 @@ func ReverseUintN(val uint, num int) uint {
 	return val
 }
 
+// Efficiently write the same bit.
+func WriteSameBit(bw BitsWriter, val bool, num int) (cnt int, err error) {
+	var mask uint = MinUint
+	if val {
+		mask = MaxUint
+	}
+
+	for num > 0 && err == nil {
+		wrCnt := num
+		if wrCnt > NumUintBits {
+			wrCnt = NumUintBits
+		}
+
+		wrCnt, err = bw.WriteBits(mask, wrCnt)
+		num -= wrCnt
+		cnt += wrCnt
+	}
+	return
+}
+
 // This function allows a BitReader to easily satisfy the BitsReader interface.
 func ReadBits(br BitReader, num int) (val uint, cnt int, err error) {
 	// Since br.ReadBit is called fairly often and function calls become a

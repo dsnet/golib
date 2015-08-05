@@ -230,6 +230,34 @@ func TestReverseUintN(t *testing.T) {
 	assert.Equal(t, uint(0x7b3d5)<<3, ReverseUintN(0xabcde, 23))
 }
 
+func TestWriteSameBit(t *testing.T) {
+	var cnt int
+	var err error
+	var bb *Buffer
+
+	for _, x := range []struct {
+		b bool
+		n int
+	}{
+		{false, 0},
+		{true, 2},
+		{false, 16},
+		{true, NumUintBits},
+		{false, 4321},
+	} {
+		bb = NewBuffer(nil)
+		cnt, err = WriteSameBit(bb, x.b, x.n)
+		assert.Equal(t, x.n, cnt)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, int64(x.n), bb.BitsWritten())
+		if x.b {
+			assert.Equal(t, x.n, Count(bb.Bytes()))
+		} else {
+			assert.Equal(t, 0, Count(bb.Bytes()))
+		}
+	}
+}
+
 func TestReadBits(t *testing.T) {
 	var val uint
 	var cnt int
