@@ -36,6 +36,31 @@ func Recover(err *error) {
 	}
 }
 
+// TODO(jtsai): Remove the declaration of Recover above and replace it with the
+// one below once Go's escape analysis improves. Otherwise, this function incurs
+// some allocation penalty for every invocation.
+//
+// See: https://golang.org/issues/12006
+/*
+// Recovers from any panics and stores any errors to all of the input pointers.
+// If the source of the panic was a Runtime error or not an error at all, then
+// the panic continues.
+func Recover(errs ...*error) {
+	switch ex := recover().(type) {
+	case nil:
+		// Do nothing
+	case runtime.Error:
+		panic(ex)
+	case error:
+		for _, err := range errs {
+			*err = ex
+		}
+	default:
+		panic(ex)
+	}
+}
+*/
+
 // Recovers from any panics and ignores them.
 // This is dangerous and should be used sparingly.
 func NilRecover() {
