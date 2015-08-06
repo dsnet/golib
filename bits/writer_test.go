@@ -5,22 +5,9 @@
 package bits
 
 import "io"
-import "bytes"
 import "runtime"
 import "testing"
 import "github.com/stretchr/testify/assert"
-
-type buffer struct {
-	bytes.Buffer
-	fail bool
-}
-
-func (b *buffer) WriteByte(val byte) (err error) {
-	if b.fail {
-		return io.ErrShortWrite
-	}
-	return b.Buffer.WriteByte(val)
-}
 
 func TestWriter(t *testing.T) {
 	type X struct {
@@ -32,14 +19,14 @@ func TestWriter(t *testing.T) {
 		return X{
 			bw.WriteAligned(),
 			bw.BytesWritten(), bw.BitsWritten(),
-			nb(bw.wr.(*buffer).Bytes()),
+			nb(bw.wr.(*faultyBuffer).Bytes()),
 		}
 	}
 
 	var cnt int
 	var err error
 
-	b := new(buffer)
+	b := new(faultyBuffer)
 	bw := NewWriter(b)
 	assert.Equal(t, X{true, 0, 0, nil}, state(bw))
 
@@ -72,7 +59,7 @@ func TestWriter(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, X{true, 3, 24, []byte{0x9d, 0xd5, 0xa7}}, state(bw))
 
-	b.fail = true
+	b.fw = true
 	assert.Equal(t, io.ErrShortWrite, bw.WriteByte(0xff))
 	assert.Equal(t, X{true, 3, 24, []byte{0x9d, 0xd5, 0xa7}}, state(bw))
 
@@ -90,7 +77,7 @@ func TestWriter(t *testing.T) {
 	assert.Equal(t, io.ErrShortWrite, err)
 	assert.Equal(t, X{false, 3, 31, []byte{0x9d, 0xd5, 0xa7}}, state(bw))
 
-	b.fail = false
+	b.fw = false
 	err = bw.WriteBit(false)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, X{true, 4, 32, []byte{0x9d, 0xd5, 0xa7, 0x74}}, state(bw))

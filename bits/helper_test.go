@@ -331,37 +331,37 @@ func TestWriteBits(t *testing.T) {
 	var cnt int
 	var err error
 
-	b := new(buffer)
+	b := new(faultyBuffer)
 	bw := NewWriter(b)
 
 	cnt, err = WriteBits(bw, 0x16, 5)
 	assert.Equal(t, 5, cnt)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, 0, b.Len())
+	assert.Equal(t, 0, len(b.Bytes()))
 
 	cnt, err = WriteBits(bw, 0x0b, 5)
 	assert.Equal(t, 5, cnt)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, 1, b.Len())
+	assert.Equal(t, 1, len(b.Bytes()))
 
 	cnt, err = WriteBits(bw, 0x2d, 6)
 	assert.Equal(t, 6, cnt)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, 2, b.Len())
+	assert.Equal(t, 2, len(b.Bytes()))
 
-	b.fail = true
+	b.fw = true
 
 	cnt, err = WriteBits(bw, 0x1a6d, 13)
 	assert.Equal(t, 7, cnt)
 	assert.Equal(t, io.ErrShortWrite, err)
-	assert.Equal(t, 2, b.Len())
+	assert.Equal(t, 2, len(b.Bytes()))
 
-	b.fail = false
+	b.fw = false
 
 	cnt, err = WriteBits(bw, 0x1a7b1, 17)
 	assert.Equal(t, 17, cnt)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, 5, b.Len())
+	assert.Equal(t, 5, len(b.Bytes()))
 
 	assert.Equal(t, []byte{0x76, 0xb5, 0xed, 0xd8, 0xd3}, b.Bytes())
 }
