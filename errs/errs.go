@@ -61,12 +61,6 @@ func Recover(errs ...*error) {
 }
 */
 
-// Recovers from any panics and ignores them.
-// This is dangerous and should be used sparingly.
-func NilRecover() {
-	_ = recover()
-}
-
 // Convert errors from one type to another.
 func Convert(err error, errNew error, errChks ...error) error {
 	for _, errChk := range errChks {

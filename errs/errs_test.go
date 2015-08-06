@@ -72,51 +72,6 @@ func TestRecover(t *testing.T) {
 	})
 }
 
-func TestNilRecover(t *testing.T) {
-	assert.NotPanics(t, func() {
-		defer NilRecover()
-		panic(nil)
-	})
-
-	assert.NotPanics(t, func() {
-		defer NilRecover()
-		panic(io.EOF)
-	})
-
-	assert.NotPanics(t, func() {
-		defer NilRecover()
-		panic(5)
-	})
-
-	assert.NotPanics(t, func() {
-		defer NilRecover()
-		var s string = "abc"
-		_ = s[100]
-	})
-
-	assert.NotPanics(t, func() {
-		defer NilRecover()
-		var s interface{} = "abc"
-		_ = s.(int)
-	})
-
-	assert.NotPanics(t, func() {
-		defer NilRecover()
-		cnt := -1
-		_ = make([]byte, cnt)
-	})
-
-	assert.NotPanics(t, func() {
-		defer NilRecover()
-		panic((*int)(nil))
-	})
-
-	assert.NotPanics(t, func() {
-		defer NilRecover()
-		panic(([]byte)(nil))
-	})
-}
-
 func TestConvert(t *testing.T) {
 	assert.Equal(t, io.EOF, Convert(io.EOF, io.ErrUnexpectedEOF))
 	assert.Equal(t, io.ErrUnexpectedEOF, Convert(io.EOF, io.ErrUnexpectedEOF, io.EOF))
