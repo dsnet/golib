@@ -20,8 +20,8 @@ func Panic(err error) {
 	}
 }
 
-// Recovers from any panics and stores errors to the given pointer. If the
-// source of the panic was not a Runtime error or an error at all, then the
+// Recovers from any panics and stores any errors to the given pointer. If the
+// source of the panic was a Runtime error or not an error at all, then the
 // panic continues.
 func Recover(err *error) {
 	switch ex := recover().(type) {
