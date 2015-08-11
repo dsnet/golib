@@ -91,7 +91,7 @@ func First(errs ...error) error {
 	return nil
 }
 
-// Assert that an condition is true.
+// Assert that an condition is true. If not, panic with the provided error.
 func Assert(cond bool, err error) {
 	if !cond {
 		panic(err)
