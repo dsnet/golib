@@ -15,4 +15,6 @@ pipe to facilitate in communicating processes.
 * [errs](http://godoc.org/bitbucket.org/rawr/golib/errs): Helpful functions for
 dealing with errors.
 * [ioutil](http://godoc.org/bitbucket.org/rawr/golib/ioutil): Collection of io
-related functionality similar to what is found in package io and package bytes.
+related functionality.
+* [strconv](http://godoc.org/bitbucket.org/rawr/golib/strconv): Collection of
+string conversion functionality.
