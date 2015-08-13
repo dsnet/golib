@@ -188,6 +188,10 @@ func (b *BufferPipe) writeSlices() (bufLo, bufHi []byte, err error) {
 	}
 	bufLo = b.buf[offLo:offHi] // Bottom half (will contain all data for Line)
 
+	// Restrict the capacity to prevent users from accidentally going past end.
+	bufLo = bufLo[:len(bufLo):len(bufLo)]
+	bufHi = bufHi[:len(bufHi):len(bufHi)]
+
 	// Check error status
 	if len(bufLo) == 0 {
 		switch {
@@ -329,6 +333,10 @@ func (b *BufferPipe) readSlices() (bufLo, bufHi []byte, err error) {
 		bufHi = b.buf[:modCnt] // Upper half (possible for Ring)
 	}
 	bufLo = b.buf[offLo:offHi] // Bottom half (will contain all data for Line)
+
+	// Restrict the capacity to prevent users from accidentally going past end.
+	bufLo = bufLo[:len(bufLo):len(bufLo)]
+	bufHi = bufHi[:len(bufHi):len(bufHi)]
 
 	// Check error status
 	if len(bufLo) == 0 {
