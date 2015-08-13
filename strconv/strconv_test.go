@@ -250,6 +250,13 @@ func TestPrefixFailParse(t *testing.T) {
 		{"INF", SI, true, pinf},
 		{"+iNf", Base1024, true, pinf},
 		{"-inF", IEC, true, ninf},
+		{"", AutoParse, false, 0},
+		{"123", AutoParse, true, 123},
+		{"123Ki", AutoParse, true, 123 * Kibi},
+		{"123k", AutoParse, true, 123 * Kilo},
+		{"123K", AutoParse, true, 123 * Kilo},
+		{"3Mi", AutoParse, true, 3 * Mebi},
+		{"3M", AutoParse, true, 3 * Mega},
 	} {
 		flt, err := ParsePrefix(x.str, x.mode)
 		if x.ok {

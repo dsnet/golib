@@ -12,6 +12,12 @@ import "errors"
 
 // These are the different modes for Prefix string conversion.
 const (
+	// AutoParse will parse the input as the IEC format if it strictly matches
+	// it, otherwise will it will try and use the SI format.
+	//
+	// This is an invalid mode for Append and Format.
+	AutoParse = iota
+
 	// SI uses a scaling of 1000x, and uses a single letter symbol to denote
 	// the scaling. The prefixes ranges from Yocto (1E-24) to Yotta (1E+24).
 	//
@@ -19,7 +25,7 @@ const (
 	// The iput accepts SI prefixes along with 'k' and 'K' for Kilo and
 	// 'μ' and 'u' for Micro.
 	// It does not support the Deca, Hecto, Deci, or Centi prefixes.
-	SI = iota
+	SI
 
 	// Base1024 uses a scaling of 1024x, but uses the same prefixes as SI. This
 	// is a non-standard prefix notation and exists because many legacy systems
@@ -134,7 +140,8 @@ func max(a, b int) int {
 // Using a combination of the math.LogX and math.Pow functions can be lossy.
 // This leads to slightly wrong values around the prefix boundaries. Thus, we
 // look up the computed exponent in an authoritative list of scalings and
-// adjust accordingly.
+// adjust accordingly. We only check up to 3 values in the relevant section,
+// ensuring a runtime of O(1).
 func adjustLog(val float64, scales []float64, minExp, exp, maxExp int) int {
 	lo, hi := max(exp-1, minExp), min(exp+1, maxExp)
 	for exp = hi; exp >= lo; exp-- {
@@ -219,6 +226,15 @@ func ParsePrefix(str string, mode int) (val float64, err error) {
 		return val, nil
 	}
 	err = nil // Reset the error
+
+	// If mode is AutoParse, detect the format to use.
+	if mode == AutoParse {
+		if len(str) > 0 && str[len(str)-1] == 'i' {
+			mode = IEC
+		} else {
+			mode = SI
+		}
+	}
 
 	// Parse the prefix symbol.
 	var exp int
