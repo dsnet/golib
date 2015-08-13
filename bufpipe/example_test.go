@@ -31,7 +31,7 @@ func randomChars(cnt int, rand *rand.Rand) string {
 // pipe and record the total number of bytes written out. This functionality is
 // useful in cases where a file format's header contains information that is
 // dependent on what is eventually written.
-func Example_lineMono() {
+func ExampleBufferPipe_lineMono() {
 	// The buffer is small enough such that the producer does hit the limit.
 	buffer := bufpipe.NewBufferPipe(make([]byte, 256), bufpipe.LineMono)
 
@@ -97,7 +97,7 @@ func Example_lineMono() {
 // available. The producer is only allowed to write as much data as the size of
 // the underlying buffer. The amount that can be written is independent of the
 // operation of the consumer.
-func Example_lineDual() {
+func ExampleBufferPipe_lineDual() {
 	// The buffer is small enough such that the producer does hit the limit.
 	buffer := bufpipe.NewBufferPipe(make([]byte, 256), bufpipe.LineDual)
 
@@ -155,7 +155,7 @@ func Example_lineDual() {
 // In RingBlock mode, the consumer sees produced data immediately as it becomes
 // available. The producer is allowed to write as much data as it wants so long
 // as the consumer continues to read the data in the pipe.
-func Example_ringBlock() {
+func ExampleBufferPipe_ringBlock() {
 	// Intentionally small buffer to show that data written into the buffer
 	// can exceed the size of the buffer itself.
 	buffer := bufpipe.NewBufferPipe(make([]byte, 64), bufpipe.RingBlock)
