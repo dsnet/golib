@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE.md file.
 
-package bufpipe_test
+package bufpipe
 
 import "io"
 import "fmt"
 import "time"
 import "sync"
 import "math/rand"
-import "bitbucket.org/rawr/golib/bufpipe"
 
 func randomChars(cnt int, rand *rand.Rand) string {
 	data := make([]byte, cnt)
@@ -31,9 +30,9 @@ func randomChars(cnt int, rand *rand.Rand) string {
 // pipe and record the total number of bytes written out. This functionality is
 // useful in cases where a file format's header contains information that is
 // dependent on what is eventually written.
-func Example_lineMono() {
+func ExampleLineMono() {
 	// The buffer is small enough such that the producer does hit the limit.
-	buffer := bufpipe.NewBufferPipe(make([]byte, 256), bufpipe.LineMono)
+	buffer := NewBufferPipe(make([]byte, 256), LineMono)
 
 	rand := rand.New(rand.NewSource(0))
 	group := new(sync.WaitGroup)
@@ -97,9 +96,9 @@ func Example_lineMono() {
 // available. The producer is only allowed to write as much data as the size of
 // the underlying buffer. The amount that can be written is independent of the
 // operation of the consumer.
-func Example_lineDual() {
+func ExampleLineDual() {
 	// The buffer is small enough such that the producer does hit the limit.
-	buffer := bufpipe.NewBufferPipe(make([]byte, 256), bufpipe.LineDual)
+	buffer := NewBufferPipe(make([]byte, 256), LineDual)
 
 	rand := rand.New(rand.NewSource(0))
 	group := new(sync.WaitGroup)
@@ -155,10 +154,10 @@ func Example_lineDual() {
 // In RingBlock mode, the consumer sees produced data immediately as it becomes
 // available. The producer is allowed to write as much data as it wants so long
 // as the consumer continues to read the data in the pipe.
-func Example_ringBlock() {
+func ExampleRingBlock() {
 	// Intentionally small buffer to show that data written into the buffer
 	// can exceed the size of the buffer itself.
-	buffer := bufpipe.NewBufferPipe(make([]byte, 64), bufpipe.RingBlock)
+	buffer := NewBufferPipe(make([]byte, 64), RingBlock)
 
 	rand := rand.New(rand.NewSource(0))
 	group := new(sync.WaitGroup)
