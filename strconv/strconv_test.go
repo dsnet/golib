@@ -210,39 +210,53 @@ func TestPrefixFailParse(t *testing.T) {
 		str  string
 		mode int
 		ok   bool
+		flt  float64
 	}{
-		{"", SI, false},
-		{"NaN1M", SI, false},
-		{"1", IEC, true},
-		{"1 ", IEC, false},
-		{"1M", IEC, false},
-		{"1Mi", SI, false},
-		{"+1M", Base1024, true},
-		{"-1Mi", Base1024, true},
-		{"+1Mi", Base1024, true},
-		{"1E-3", SI, false},
-		{"1ki", SI, false},
-		{"1ki", IEC, false},
-		{"1ki", Base1024, true},
-		{"+1ki", Base1024, true},
-		{"1μi", SI, false},
-		{"1μi", IEC, false},
-		{"1μi", Base1024, false},
-		{"1k", SI, true},
-		{"1k", IEC, false},
-		{"1k", Base1024, true},
-		{"1μ", SI, true},
-		{"1μ ", SI, false},
-		{" 1μ", SI, false},
-		{"+1μ", SI, true},
-		{"1μ", IEC, false},
-		{"1μ", Base1024, true},
-		{"+1μ", Base1024, true},
-		{"1mi", IEC, false},
+		{"", SI, false, 0},
+		{"NaN1M", SI, false, 0},
+		{"1", IEC, true, Unit},
+		{"1 ", IEC, false, 0},
+		{"1M", IEC, false, 0},
+		{"1Mi", SI, false, 0},
+		{"+1M", Base1024, true, +Mebi},
+		{"-1Mi", Base1024, true, -Mebi},
+		{"+1Mi", Base1024, true, +Mebi},
+		{"1E-3", SI, false, 0},
+		{"1ki", SI, false, 0},
+		{"1ki", IEC, false, 0},
+		{"1ki", Base1024, true, Kibi},
+		{"+1ki", Base1024, true, Kibi},
+		{"1μi", SI, false, 0},
+		{"1μi", IEC, false, 0},
+		{"1μi", Base1024, false, 0},
+		{"1k", SI, true, Kilo},
+		{"1k", IEC, false, 0},
+		{"1k", Base1024, true, Kibi},
+		{"1μ", SI, true, Micro},
+		{"1μ ", SI, false, 0},
+		{" 1μ", SI, false, 0},
+		{"+1μ", SI, true, Micro},
+		{"1μ", IEC, false, 0},
+		{"1μ", Base1024, true, 1.0 / Mebi},
+		{"+1μ", Base1024, true, 1.0 / Mebi},
+		{"1mi", IEC, false, 0},
+		{"0.000001", SI, true, Micro},
+		{"1000000u", SI, true, Unit},
+		{"1048576", Base1024, true, Mebi},
+		{"1048576Ki", IEC, true, Gibi},
+		{"nAn", SI, true, nan},
+		{"+nan", Base1024, false, 0},
+		{"-NAN", IEC, false, 0},
+		{"INF", SI, true, pinf},
+		{"+iNf", Base1024, true, pinf},
+		{"-inF", IEC, true, ninf},
 	} {
-		_, err := ParsePrefix(x.str, x.mode)
+		flt, err := ParsePrefix(x.str, x.mode)
 		if x.ok {
 			assert.Nil(t, err)
+			if !math.IsNaN(x.flt) || !math.IsNaN(flt) {
+				assert.Equal(t, x.flt, flt)
+			}
 		} else {
 			assert.NotNil(t, err)
 		}

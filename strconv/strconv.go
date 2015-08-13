@@ -223,8 +223,7 @@ func ParsePrefix(str string, mode int) (val float64, err error) {
 	// Parse the prefix symbol.
 	var exp int
 	var saveStr = str
-	i := strings.IndexAny(str, parsePrefixes)
-	if i >= 0 {
+	if i := strings.IndexAny(str, parsePrefixes); i >= 0 {
 		strPre := str[i:]
 		str = str[:i]
 
@@ -234,9 +233,7 @@ func ParsePrefix(str string, mode int) (val float64, err error) {
 		for si, ch := range strPre {
 			switch si {
 			case 0:
-				if mode == IEC && (ch == kiloAlt || ch == microAlt) {
-					goto fail // Syntax error
-				}
+				usedKiloAlt := bool(ch == kiloAlt)
 				switch ch {
 				case kiloAlt:
 					ch = kilo
@@ -244,7 +241,7 @@ func ParsePrefix(str string, mode int) (val float64, err error) {
 					ch = micro
 				}
 				exp = strings.IndexByte(prefixes, byte(ch)) - len(prefixes)/2
-				if mode == IEC && exp < 0 {
+				if mode == IEC && (usedKiloAlt || exp < 0) {
 					goto fail // Syntax error
 				}
 			case 1:
