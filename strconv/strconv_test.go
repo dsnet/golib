@@ -257,6 +257,8 @@ func TestPrefixFailParse(t *testing.T) {
 		{"123K", AutoParse, true, 123 * Kilo},
 		{"3Mi", AutoParse, true, 3 * Mebi},
 		{"3M", AutoParse, true, 3 * Mega},
+		{"3E-3", AutoParse, true, 3E-3},
+		{"2E2", AutoParse, true, 2E2},
 	} {
 		flt, err := ParsePrefix(x.str, x.mode)
 		if x.ok {

@@ -12,8 +12,8 @@ import "errors"
 
 // These are the different modes for Prefix string conversion.
 const (
-	// AutoParse will parse the input as the IEC format if it strictly matches
-	// it, otherwise will it will try and use the SI format.
+	// AutoParse will parse the input as either the SI, IEC, or regular float
+	// notation as accepted by ParseFloat.
 	//
 	// This is an invalid mode for Append and Format.
 	AutoParse = iota
@@ -222,7 +222,7 @@ func FormatPrefix(val float64, mode int, prec int) (str string) {
 // It is valid to parse +Inf, -Inf, and NaN.
 func ParsePrefix(str string, mode int) (val float64, err error) {
 	val, err = strconv.ParseFloat(str, 64)
-	if err == nil && math.IsNaN(val) || math.IsInf(val, 0) {
+	if err == nil && (mode == AutoParse || math.IsNaN(val) || math.IsInf(val, 0)) {
 		return val, nil
 	}
 	err = nil // Reset the error
