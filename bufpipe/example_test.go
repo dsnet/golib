@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE.md file.
 
-package bufpipe
+package bufpipe_test
 
 import "io"
 import "fmt"
 import "time"
 import "sync"
 import "math/rand"
+import "bitbucket.org/rawr/golib/bufpipe"
 
 func randomChars(cnt int, rand *rand.Rand) string {
 	data := make([]byte, cnt)
@@ -32,7 +33,7 @@ func randomChars(cnt int, rand *rand.Rand) string {
 // dependent on what is eventually written.
 func ExampleLineMono() {
 	// The buffer is small enough such that the producer does hit the limit.
-	buffer := NewBufferPipe(make([]byte, 256), LineMono)
+	buffer := bufpipe.NewBufferPipe(make([]byte, 256), bufpipe.LineMono)
 
 	rand := rand.New(rand.NewSource(0))
 	group := new(sync.WaitGroup)
@@ -98,7 +99,7 @@ func ExampleLineMono() {
 // operation of the consumer.
 func ExampleLineDual() {
 	// The buffer is small enough such that the producer does hit the limit.
-	buffer := NewBufferPipe(make([]byte, 256), LineDual)
+	buffer := bufpipe.NewBufferPipe(make([]byte, 256), bufpipe.LineDual)
 
 	rand := rand.New(rand.NewSource(0))
 	group := new(sync.WaitGroup)
@@ -157,7 +158,7 @@ func ExampleLineDual() {
 func ExampleRingBlock() {
 	// Intentionally small buffer to show that data written into the buffer
 	// can exceed the size of the buffer itself.
-	buffer := NewBufferPipe(make([]byte, 64), RingBlock)
+	buffer := bufpipe.NewBufferPipe(make([]byte, 64), bufpipe.RingBlock)
 
 	rand := rand.New(rand.NewSource(0))
 	group := new(sync.WaitGroup)
