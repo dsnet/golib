@@ -12,7 +12,7 @@ import "errors"
 
 // These are the different modes for Prefix string conversion.
 const (
-	// SI uses a scaling of 1000x, and uses the single letter symbol to denote
+	// SI uses a scaling of 1000x, and uses a single letter symbol to denote
 	// the scaling. The prefixes ranges from Yocto (1E-24) to Yotta (1E+24).
 	//
 	// The output uses SI prefixes, and uses 'k' for Kilo and 'μ' for Micro.
