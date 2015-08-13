@@ -474,3 +474,11 @@ func (b *BufferPipe) Reset() {
 	b.wrPtr, b.rdPtr = 0, 0
 	b.err, b.closed = nil, false
 }
+
+// TODO(jtsai): Allow BufferPipe to be grown. This is safe at Reset time and
+// before the first call to Write. When else is this safe?
+
+// TODO(jtsai): Double check why some methods allow the BufferPipe pointer to
+// be nil.
+
+// TODO(jtsai): Why are some methods not protected by a mutex?
