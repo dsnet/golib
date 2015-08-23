@@ -123,33 +123,23 @@ var scaleIEC = []float64{
 	Kibi, Mebi, Gibi, Tebi, Pebi, Exbi, Zebi, Yobi,
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 // Using a combination of the math.LogX and math.Pow functions can be lossy.
 // This leads to slightly wrong values around the prefix boundaries. Thus, we
 // look up the computed exponent in an authoritative list of scalings and
 // adjust accordingly. We only check up to 3 values in the relevant section,
 // ensuring a runtime of O(1).
 func adjustLog(val float64, scales []float64, minExp, exp, maxExp int) int {
-	lo, hi := max(exp-1, minExp), min(exp+1, maxExp)
-	for exp = hi; exp >= lo; exp-- {
-		if scales[exp+len(scales)/2] <= math.Abs(val) {
-			break
-		}
+	exp++
+	if exp > maxExp {
+		exp = maxExp
 	}
-	return max(min(exp, maxExp), minExp)
+	for exp >= minExp && scales[exp+len(scales)/2] > math.Abs(val) {
+		exp--
+	}
+	if exp < minExp {
+		exp = minExp
+	}
+	return exp
 }
 
 // AppendPrefix appends the string form of the floating-point number val, as
