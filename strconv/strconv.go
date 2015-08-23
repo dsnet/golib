@@ -22,7 +22,7 @@ const (
 	// the scaling. The prefixes ranges from Yocto (1E-24) to Yotta (1E+24).
 	//
 	// The output uses SI prefixes, and uses 'k' for Kilo and 'μ' for Micro.
-	// The iput accepts SI prefixes along with 'k' and 'K' for Kilo and
+	// The input accepts SI prefixes along with 'k' and 'K' for Kilo and
 	// 'μ' and 'u' for Micro.
 	// It does not support the Deca, Hecto, Deci, or Centi prefixes.
 	SI
@@ -32,7 +32,7 @@ const (
 	// unfortunately operate in this way.
 	//
 	// The output uses SI prefixes, but uses 'K' for Kilo and 'u' for Micro.
-	// The Input accepts SI prefixes along with 'k' and 'K' for Kilo and
+	// The input accepts SI prefixes along with 'k' and 'K' for Kilo and
 	// 'μ' and 'u' for Micro. It also accepts IEC notation.
 	Base1024
 
