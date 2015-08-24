@@ -66,11 +66,10 @@ func altToNorm(s string) string {
 }
 
 func split(s string) (string, string) {
-	i := strings.IndexAny(s, parsePrefixes)
-	if i < 0 {
-		return s, ""
+	if i := strings.IndexAny(s, parsePrefixes); i >= 0 {
+		return s[:i], s[i:]
 	}
-	return s[:i], s[i:]
+	return s, ""
 }
 
 func TestPrefixExactSI(t *testing.T) {
