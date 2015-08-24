@@ -222,6 +222,7 @@ func TestPrefixFailParse(t *testing.T) {
 		{"-1Mi", Base1024, true, -Mebi},
 		{"+1Mi", Base1024, true, +Mebi},
 		{"1E-3", SI, false, 0},
+		{"1e-3", SI, false, 0},
 		{"1ki", SI, false, 0},
 		{"1ki", IEC, false, 0},
 		{"1ki", Base1024, true, Kibi},

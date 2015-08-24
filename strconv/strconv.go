@@ -181,9 +181,9 @@ func AppendPrefix(dst []byte, val float64, mode int, prec int) (out []byte) {
 		sym = prefixes[exp+len(prefixes)/2]
 		switch {
 		case mode == SI && sym == kilo:
-			dst = append(dst, kiloAlt)
+			dst = append(dst, string(kiloAlt)...)
 		case mode == SI && sym == micro:
-			dst = append(dst, string(microAlt)...) // Uses UTF-8.
+			dst = append(dst, string(microAlt)...)
 		default:
 			dst = append(dst, sym)
 		}
@@ -261,12 +261,8 @@ func ParsePrefix(str string, mode int) (val float64, err error) {
 	}
 
 	// Parse the number part.
-	for _, ch := range str {
-		switch ch {
-		case '-', '+', '.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-		default:
-			goto fail // Syntax error
-		}
+	if strings.Trim(str, "-+.0123456789") != "" {
+		goto fail
 	}
 	if val, err = strconv.ParseFloat(str, 64); err != nil {
 		goto fail
