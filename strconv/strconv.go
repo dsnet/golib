@@ -107,21 +107,25 @@ const (
 	maxExp = +len(mulPrefixes)
 	minExp = -len(divPrefixes)
 
-	kilo, kiloAlt   = 'K', 'k'
-	micro, microAlt = 'u', 'μ'
+	kiloNorm, kiloAlt   = 'K', 'k'
+	microNorm, microAlt = 'u', 'μ'
 )
 
-var scaleSI = []float64{
-	Yocto, Zepto, Atto, Femto, Pico, Nano, Micro, Milli,
-	Unit,
-	Kilo, Mega, Giga, Tera, Peta, Exa, Zetta, Yotta,
-}
+var (
+	mapNormToAlt = map[rune]rune{kiloNorm: kiloAlt, microNorm: microAlt}
+	mapAltToNorm = map[rune]rune{kiloAlt: kiloNorm, microAlt: microNorm}
 
-var scaleIEC = []float64{
-	yocbi, zepbi, attbi, fembi, picbi, nanbi, micbi, milbi,
-	Unit,
-	Kibi, Mebi, Gibi, Tebi, Pebi, Exbi, Zebi, Yobi,
-}
+	scaleSI = []float64{
+		Yocto, Zepto, Atto, Femto, Pico, Nano, Micro, Milli,
+		Unit,
+		Kilo, Mega, Giga, Tera, Peta, Exa, Zetta, Yotta,
+	}
+	scaleIEC = []float64{
+		yocbi, zepbi, attbi, fembi, picbi, nanbi, micbi, milbi,
+		Unit,
+		Kibi, Mebi, Gibi, Tebi, Pebi, Exbi, Zebi, Yobi,
+	}
+)
 
 // Using a combination of the math.LogX and math.Pow functions can be lossy.
 // This leads to slightly wrong values around the prefix boundaries. Thus, we
@@ -177,14 +181,10 @@ func AppendPrefix(dst []byte, val float64, mode int, prec int) (out []byte) {
 
 	// Print the prefix symbol.
 	if exp != 0 {
-		var sym byte
-		sym = prefixes[exp+len(prefixes)/2]
-		switch {
-		case mode == SI && sym == kilo:
-			dst = append(dst, string(kiloAlt)...)
-		case mode == SI && sym == micro:
-			dst = append(dst, string(microAlt)...)
-		default:
+		sym := prefixes[exp+len(prefixes)/2]
+		if alt := mapNormToAlt[rune(sym)]; mode == SI && alt != 0 {
+			dst = append(dst, string(alt)...)
+		} else {
 			dst = append(dst, sym)
 		}
 		if mode == IEC {
@@ -234,28 +234,25 @@ func ParsePrefix(str string, mode int) (val float64, err error) {
 		str = str[:i]
 
 		if mode == IEC && len(strPre) != 2 {
-			goto fail // Syntax error
+			goto fail
 		}
 		for si, ch := range strPre {
 			switch si {
 			case 0:
-				usedKiloAlt := bool(ch == kiloAlt)
-				switch ch {
-				case kiloAlt:
-					ch = kilo
-				case microAlt:
-					ch = micro
+				norm, usedAlt := mapAltToNorm[ch]
+				if usedAlt {
+					ch = norm
 				}
 				exp = strings.IndexByte(prefixes, byte(ch)) - len(prefixes)/2
-				if mode == IEC && (usedKiloAlt || exp < 0) {
-					goto fail // Syntax error
+				if mode == IEC && (usedAlt || exp < 0) {
+					goto fail
 				}
 			case 1:
 				if mode == SI || ch != 'i' {
-					goto fail // Syntax error
+					goto fail
 				}
 			default:
-				goto fail // Syntax error
+				goto fail
 			}
 		}
 	}

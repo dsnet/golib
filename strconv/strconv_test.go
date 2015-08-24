@@ -48,25 +48,21 @@ func addIEC(s string) string {
 }
 
 func normToAlt(s string) string {
-	switch s {
-	case string(kilo):
-		return string(kiloAlt)
-	case string(micro):
-		return string(microAlt)
-	default:
-		return s
+	for _, ch := range s {
+		if alt, ok := mapNormToAlt[ch]; ok {
+			return string(alt)
+		}
 	}
+	return s
 }
 
 func altToNorm(s string) string {
-	switch s {
-	case string(kiloAlt):
-		return string(kilo)
-	case string(microAlt):
-		return string(micro)
-	default:
-		return s
+	for _, ch := range s {
+		if alt, ok := mapAltToNorm[ch]; ok {
+			return string(alt)
+		}
 	}
+	return s
 }
 
 func split(s string) (string, string) {
