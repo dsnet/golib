@@ -107,13 +107,13 @@ const (
 	maxExp = +len(mulPrefixes)
 	minExp = -len(divPrefixes)
 
-	kiloNorm, kiloAlt   = 'K', 'k'
-	microNorm, microAlt = 'u', 'μ'
+	microNorm, kiloNorm = 'u', 'K'
+	microAlt, kiloAlt   = 'μ', 'k'
 )
 
 var (
-	mapNormToAlt = map[rune]rune{kiloNorm: kiloAlt, microNorm: microAlt}
-	mapAltToNorm = map[rune]rune{kiloAlt: kiloNorm, microAlt: microNorm}
+	mapNormToAlt = map[rune]rune{microNorm: microAlt, kiloNorm: kiloAlt}
+	mapAltToNorm = map[rune]rune{microAlt: microNorm, kiloAlt: kiloNorm}
 
 	scaleSI = []float64{
 		Yocto, Zepto, Atto, Femto, Pico, Nano, Micro, Milli,
