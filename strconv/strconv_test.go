@@ -58,8 +58,8 @@ func normToAlt(s string) string {
 
 func altToNorm(s string) string {
 	for _, ch := range s {
-		if alt, ok := mapAltToNorm[ch]; ok {
-			return string(alt)
+		if norm, ok := mapAltToNorm[ch]; ok {
+			return string(norm)
 		}
 	}
 	return s
