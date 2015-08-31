@@ -9,7 +9,7 @@ import "fmt"
 import "time"
 import "sync"
 import "math/rand"
-import "bitbucket.org/rawr/golib/bufpipe"
+import "github.com/dsnet/golib/bufpipe"
 
 func randomChars(cnt int, rand *rand.Rand) string {
 	data := make([]byte, cnt)

@@ -8,7 +8,7 @@ package ioutil
 import "io"
 import "os"
 import "math"
-import "bitbucket.org/rawr/golib/errs"
+import "github.com/dsnet/golib/errs"
 
 // Define constants for seeking here so that package os is not needed as well.
 const (
