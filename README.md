@@ -7,6 +7,13 @@ Functionality that the author (Joe Tsai) found common among his various projects
 are pulled out and placed here.
 
 
+## Installation ##
+
+Run the command:
+
+```go get github.com/dsnet/golib```
+
+
 ## Packages ##
 
 * [bits](http://godoc.org/github.com/dsnet/golib/bits): Define readers and
