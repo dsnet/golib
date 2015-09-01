@@ -152,7 +152,7 @@ func TestInvert(t *testing.T) {
 
 	b = []byte{0xf3, 0xd1}
 	Invert(b)
-	assert.Equal(t, []byte{0xc, 0x2e}, b)
+	assert.Equal(t, []byte{0x0c, 0x2e}, b)
 
 	b = []byte{0xff, 0xff, 0xff}
 	Invert(b)
@@ -190,6 +190,34 @@ func TestCountUint(t *testing.T) {
 	assert.Equal(t, NumUintBits-2, CountUint(MaxUint>>2))
 	assert.Equal(t, NumUintBits-1, CountUint(MaxUint>>1))
 	assert.Equal(t, NumUintBits, CountUint(MaxUint))
+}
+
+func TestReverse(t *testing.T) {
+	var b []byte
+
+	b = []byte(nil)
+	Reverse(b)
+	assert.Equal(t, []byte(nil), b)
+
+	b = []byte{0xaa}
+	Reverse(b)
+	assert.Equal(t, []byte{0x55}, b)
+
+	b = []byte{0x7b}
+	Reverse(b)
+	assert.Equal(t, []byte{0xde}, b)
+
+	b = []byte{0xf3, 0xd1}
+	Reverse(b)
+	assert.Equal(t, []byte{0xcf, 0x8b}, b)
+
+	b = []byte{0xff, 0xff, 0xff}
+	Reverse(b)
+	assert.Equal(t, []byte{0xff, 0xff, 0xff}, b)
+
+	b = []byte{0x28, 0xac, 0xf1, 0x19}
+	Reverse(b)
+	assert.Equal(t, []byte{0x14, 0x35, 0x8f, 0x98}, b)
 }
 
 func TestReverseByte(t *testing.T) {

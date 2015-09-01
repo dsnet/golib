@@ -141,6 +141,13 @@ func CountUint(val uint) (ones int) {
 	return ones
 }
 
+// Reverse the bits of every byte in the slice.
+func Reverse(data []byte) {
+	for i, b := range data {
+		data[i] = revByte[b]
+	}
+}
+
 // Reverse the bits of a byte.
 func ReverseByte(val byte) byte {
 	return revByte[val]
