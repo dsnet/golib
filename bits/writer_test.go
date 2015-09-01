@@ -82,7 +82,7 @@ func TestWriter(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, X{true, 4, 32, []byte{0x9d, 0xd5, 0xa7, 0x74}}, state(bw))
 
-	// Reset
+	// Reset.
 	b.Reset()
 	bw.Reset(b)
 	assert.Equal(t, X{true, 0, 0, nil}, state(bw))

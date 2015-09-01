@@ -50,7 +50,7 @@ func (bw *Writer) WriteBits(val uint, num int) (cnt int, err error) {
 	for cnt = 0; cnt < num; cnt++ {
 		bit = Itob(val & (1 << uint(cnt)))
 
-		// Nearly identical to the bw.WriteBit function
+		// Nearly identical to the bw.WriteBit function.
 		if bit {
 			bw.val |= bw.mask
 		}

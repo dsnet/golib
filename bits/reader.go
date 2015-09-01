@@ -44,7 +44,7 @@ func (br *Reader) ReadBits(num int) (val uint, cnt int, err error) {
 	// br.ReadBit is inlined.
 	var bit bool
 	for cnt = 0; cnt < num; cnt++ {
-		// Nearly identical to the br.ReadBit function
+		// Nearly identical to the br.ReadBit function.
 		if br.mask == 0x00 {
 			if br.val, err = br.rd.ReadByte(); err != nil {
 				if err == io.EOF && cnt > 0 {

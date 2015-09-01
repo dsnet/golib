@@ -169,7 +169,7 @@ func TestBuffer(t *testing.T) {
 	assert.Equal(t, io.EOF, err)
 	assert.Equal(t, X{true, true, 80, 80, nil}, state(bb))
 
-	// Reset
+	// Reset.
 	bb.Reset()
 	assert.Equal(t, X{true, true, 0, 0, nil}, state(bb))
 
@@ -179,7 +179,7 @@ func TestBuffer(t *testing.T) {
 	assert.Equal(t, []byte(nil), nb(buf[:cnt]))
 	assert.Equal(t, X{true, true, 0, 0, nil}, state(bb))
 
-	// Reset with data
+	// Reset with data.
 	bb.ResetBuffer([]byte{0xab, 0xcd, 0xef})
 	assert.Equal(t, X{true, true, 0, 24, []byte{0xab, 0xcd, 0xef}}, state(bb))
 

@@ -102,7 +102,7 @@ func TestReader(t *testing.T) {
 	assert.Equal(t, io.EOF, err)
 	assert.Equal(t, X{true, 4, 32}, state(br))
 
-	// Reset
+	// Reset.
 	br.Reset(nil)
 	assert.Equal(t, X{true, 0, 0}, state(br))
 }

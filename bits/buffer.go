@@ -43,7 +43,7 @@ func (b *Buffer) ReadBits(num int) (val uint, cnt int, err error) {
 	// b.ReadBit is inlined.
 	var bit bool
 	for cnt = 0; cnt < num; cnt++ {
-		// Nearly identical to the b.ReadBit function
+		// Nearly identical to the b.ReadBit function.
 		if b.off == len(b.buf) && b.rdMask == b.wrMask {
 			err = io.EOF
 			if err == io.EOF && cnt > 0 {
@@ -136,7 +136,7 @@ func (b *Buffer) WriteBits(val uint, num int) (cnt int, err error) {
 	for cnt = 0; cnt < num; cnt++ {
 		bit = Itob(val & (1 << uint(cnt)))
 
-		// Nearly identical to the b.WriteBit function
+		// Nearly identical to the b.WriteBit function.
 		if b.wrMask == 0x00 {
 			b.wrMask = 0x01
 			b.buf = append(b.buf, 0x00)
