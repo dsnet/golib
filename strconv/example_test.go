@@ -49,12 +49,12 @@ func ExampleParsePrefix() {
 	}
 
 	if s, err := strconv.ParsePrefix("1Ti", strconv.IEC); err == nil {
-		fmt.Printf("Number of bytes in mebibyte: %.0fB\n", s)
+		fmt.Printf("Number of bytes in tebibyte: %.0fB\n", s)
 	}
 
 	// Output:
 	// Speed of light: 299792458m/s
 	// Distance from LA to SF: 616379m
 	// Max FAT12 partition size: 33554432B
-	// Number of bytes in mebibyte: 1099511627776B
+	// Number of bytes in tebibyte: 1099511627776B
 }
