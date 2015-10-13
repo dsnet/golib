@@ -16,13 +16,15 @@ Run the command:
 
 ## Packages ##
 
-* [bits](http://godoc.org/github.com/dsnet/golib/bits): Define readers and
-writers that operate at the bit level.
-* [bufpipe](http://godoc.org/github.com/dsnet/golib/bufpipe): An efficient
-pipe to facilitate in communicating processes.
-* [errs](http://godoc.org/github.com/dsnet/golib/errs): Helpful functions for
-dealing with errors.
-* [ioutil](http://godoc.org/github.com/dsnet/golib/ioutil): Collection of io
-related functionality.
-* [strconv](http://godoc.org/github.com/dsnet/golib/strconv): Collection of
-string conversion functionality.
+* [bits](http://godoc.org/github.com/dsnet/golib/bits):
+Define readers and writers that operate at the bit level.
+* [bufpipe](http://godoc.org/github.com/dsnet/golib/bufpipe):
+An efficient pipe to facilitate in communicating processes.
+* [errs](http://godoc.org/github.com/dsnet/golib/errs):
+Helpful functions for dealing with errors.
+* [hashutil](http://godoc.org/github.com/dsnet/golib/hashutil):
+Collection of hash related functionality.
+* [ioutil](http://godoc.org/github.com/dsnet/golib/ioutil):
+Collection of io related functionality.
+* [strconv](http://godoc.org/github.com/dsnet/golib/strconv):
+Collection of string conversion functionality.
