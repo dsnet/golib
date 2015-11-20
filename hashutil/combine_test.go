@@ -20,7 +20,7 @@ func shortString(s string) string {
 	return s
 }
 
-func TestAdler32Combine(t *testing.T) {
+func TestCombineAdler32(t *testing.T) {
 	var golden = []struct {
 		out uint32
 		in  string
@@ -83,15 +83,15 @@ func TestAdler32Combine(t *testing.T) {
 			p1, p2 := []byte(g.in[:i]), []byte(g.in[i:])
 			in1, in2 := shortString(g.in[:i]), shortString(g.in[i:])
 			len2 := int64(len(p2))
-			if got := Adler32Combine(adler32.Checksum(p1), adler32.Checksum(p2), len2); got != g.out {
-				t.Errorf("Adler32Combine(adler32.Checksum(%q), adler32.Checksum(%q), %d) = 0x%x want 0x%x",
+			if got := CombineAdler32(adler32.Checksum(p1), adler32.Checksum(p2), len2); got != g.out {
+				t.Errorf("CombineAdler32(adler32.Checksum(%q), adler32.Checksum(%q), %d) = 0x%x want 0x%x",
 					in1, in2, len2, got, g.out)
 			}
 		}
 	}
 }
 
-func TestCRC32Combine(t *testing.T) {
+func TestCombineCRC32(t *testing.T) {
 	var golden = []struct {
 		ieee, castagnoli, koopman uint32
 		in                        string
@@ -152,23 +152,23 @@ func TestCRC32Combine(t *testing.T) {
 			p1, p2 := []byte(g.in[:i]), []byte(g.in[i:])
 			in1, in2 := g.in[:i], g.in[i:]
 			len2 := int64(len(p2))
-			if got := CRC32Combine(crc32.IEEE, ChecksumIEEE(p1), ChecksumIEEE(p2), len2); got != g.ieee {
-				t.Errorf("CRC32Combine(crc32.IEEE, ChecksumIEEE(%q), ChecksumIEEE(%q), %d) = 0x%x want 0x%x",
+			if got := CombineCRC32(crc32.IEEE, ChecksumIEEE(p1), ChecksumIEEE(p2), len2); got != g.ieee {
+				t.Errorf("CombineCRC32(crc32.IEEE, ChecksumIEEE(%q), ChecksumIEEE(%q), %d) = 0x%x want 0x%x",
 					in1, in2, len2, got, g.ieee)
 			}
-			if got := CRC32Combine(crc32.Castagnoli, ChecksumCastagnoli(p1), ChecksumCastagnoli(p2), len2); got != g.castagnoli {
-				t.Errorf("CRC32Combine(crc32.Castagnoli, ChecksumCastagnoli(%q), ChecksumCastagnoli(%q), %d) = 0x%x want 0x%x",
+			if got := CombineCRC32(crc32.Castagnoli, ChecksumCastagnoli(p1), ChecksumCastagnoli(p2), len2); got != g.castagnoli {
+				t.Errorf("CombineCRC32(crc32.Castagnoli, ChecksumCastagnoli(%q), ChecksumCastagnoli(%q), %d) = 0x%x want 0x%x",
 					in1, in2, len2, got, g.castagnoli)
 			}
-			if got := CRC32Combine(crc32.Koopman, ChecksumKoopman(p1), ChecksumKoopman(p2), len2); got != g.koopman {
-				t.Errorf("CRC32Combine(crc32.Koopman, ChecksumKoopman(%q), ChecksumKoopman(%q), %d) = 0x%x want 0x%x",
+			if got := CombineCRC32(crc32.Koopman, ChecksumKoopman(p1), ChecksumKoopman(p2), len2); got != g.koopman {
+				t.Errorf("CombineCRC32(crc32.Koopman, ChecksumKoopman(%q), ChecksumKoopman(%q), %d) = 0x%x want 0x%x",
 					in1, in2, len2, got, g.koopman)
 			}
 		}
 	}
 }
 
-func TestCRC64Combine(t *testing.T) {
+func TestCombineCRC64(t *testing.T) {
 	var golden = []struct {
 		iso, ecma uint64
 		in        string
@@ -226,12 +226,12 @@ func TestCRC64Combine(t *testing.T) {
 			p1, p2 := []byte(g.in[:i]), []byte(g.in[i:])
 			in1, in2 := g.in[:i], g.in[i:]
 			len2 := int64(len(p2))
-			if got := CRC64Combine(crc64.ISO, ChecksumISO(p1), ChecksumISO(p2), len2); got != g.iso {
-				t.Errorf("CRC64Combine(crc64.ISO, ChecksumISO(%q), ChecksumISO(%q), %d) = 0x%x want 0x%x",
+			if got := CombineCRC64(crc64.ISO, ChecksumISO(p1), ChecksumISO(p2), len2); got != g.iso {
+				t.Errorf("CombineCRC64(crc64.ISO, ChecksumISO(%q), ChecksumISO(%q), %d) = 0x%x want 0x%x",
 					in1, in2, len2, got, g.iso)
 			}
-			if got := CRC64Combine(crc64.ECMA, ChecksumECMA(p1), ChecksumECMA(p2), len2); got != g.ecma {
-				t.Errorf("CRC64Combine(crc64.ECMA, ChecksumECMA(%q), ChecksumECMA(%q), %d) = 0x%x want 0x%x",
+			if got := CombineCRC64(crc64.ECMA, ChecksumECMA(p1), ChecksumECMA(p2), len2); got != g.ecma {
+				t.Errorf("CombineCRC64(crc64.ECMA, ChecksumECMA(%q), ChecksumECMA(%q), %d) = 0x%x want 0x%x",
 					in1, in2, len2, got, g.ecma)
 			}
 		}

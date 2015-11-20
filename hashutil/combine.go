@@ -5,7 +5,7 @@
 // Package hashutil provides specialized hash functionality.
 package hashutil
 
-// The origin of the Adler32Combine, CRC32Combine, and CRC64Combine functions
+// The origin of the CombineAdler32, CombineCRC32, and CombineCRC64 functions
 // in this package is the adler32_combine, crc32_combine, gf2_matrix_times,
 // and gf2_matrix_square functions found in the zlib library and was translated
 // from C to Go. Thanks goes to the authors of zlib:
@@ -40,12 +40,12 @@ package hashutil
 // jloup@gzip.org          madler@alumni.caltech.edu
 // ====================================================
 
-// Adler32Combine combines two Adler-32 checksums together.
+// CombineAdler32 combines two Adler-32 checksums together.
 // Let AB be the string concatenation of two strings A and B. Then Combine
 // computes the checksum of AB given only the checksum of A, the checksum of B,
 // and the length of B:
-//	adler32.Checksum(AB) == Adler32Combine(adler32.Checksum(A), adler32.Checksum(B), len(B))
-func Adler32Combine(adler1, adler2 uint32, len2 int64) uint32 {
+//	adler32.Checksum(AB) == CombineAdler32(adler32.Checksum(A), adler32.Checksum(B), len(B))
+func CombineAdler32(adler1, adler2 uint32, len2 int64) uint32 {
 	if len2 < 0 {
 		panic("hashutil: negative length")
 	}
@@ -73,13 +73,13 @@ func Adler32Combine(adler1, adler2 uint32, len2 int64) uint32 {
 	return sum1 | (sum2 << 16)
 }
 
-// CRC32Combine combines two CRC-32 checksums together.
+// CombineCRC32 combines two CRC-32 checksums together.
 // Let AB be the string concatenation of two strings A and B. Then Combine
 // computes the checksum of AB given only the checksum of A, the checksum of B,
 // and the length of B:
 //	tab := crc32.MakeTable(poly)
-//	crc32.Checksum(AB, tab) == CRC32Combine(poly, crc32.Checksum(A, tab), crc32.Checksum(B, tab), len(B))
-func CRC32Combine(poly, crc1, crc2 uint32, len2 int64) uint32 {
+//	crc32.Checksum(AB, tab) == CombineCRC32(poly, crc32.Checksum(A, tab), crc32.Checksum(B, tab), len(B))
+func CombineCRC32(poly, crc1, crc2 uint32, len2 int64) uint32 {
 	if len2 < 0 {
 		panic("hashutil: negative length")
 	}
@@ -146,13 +146,13 @@ func CRC32Combine(poly, crc1, crc2 uint32, len2 int64) uint32 {
 	return crc1 ^ crc2
 }
 
-// CRC64Combine combines two CRC-64 checksums together.
+// CombineCRC64 combines two CRC-64 checksums together.
 // Let AB be the string concatenation of two strings A and B. Then Combine
 // computes the checksum of AB given only the checksum of A, the checksum of B,
 // and the length of B:
 //	tab := crc64.MakeTable(poly)
-//	crc64.Checksum(AB, tab) == CRC64Combine(poly, crc64.Checksum(A, tab), crc64.Checksum(B, tab), len(B))
-func CRC64Combine(poly, crc1, crc2 uint64, len2 int64) uint64 {
+//	crc64.Checksum(AB, tab) == CombineCRC64(poly, crc64.Checksum(A, tab), crc64.Checksum(B, tab), len(B))
+func CombineCRC64(poly, crc1, crc2 uint64, len2 int64) uint64 {
 	if len2 < 0 {
 		panic("hashutil: negative length")
 	}

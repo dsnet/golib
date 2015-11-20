@@ -174,7 +174,7 @@ func ReverseUintN(val uint, num int) uint {
 
 // Efficiently write the same bit.
 func WriteSameBit(bw BitsWriter, val bool, num int) (cnt int, err error) {
-	var mask uint = MinUint
+	var mask = MinUint
 	if val {
 		mask = MaxUint
 	}

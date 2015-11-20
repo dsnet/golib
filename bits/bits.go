@@ -16,7 +16,7 @@ const (
 
 // ErrAlign is returned if the function called cannot perform the requested
 // operation because the internal offset is not aligned to a byte-boundary.
-var ErrAlign = errors.New("golib/bits: offset is not byte-aligned")
+var ErrAlign = errors.New("bits: offset is not byte-aligned")
 
 type BitReader interface {
 	// Read a single bit.
