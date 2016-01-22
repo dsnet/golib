@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE.md file.
 
-// Package bits implements bit-twiddling functionality.
+// Package bits implements functions for the manipulation of bit streams.
 package bits
 
 import "unsafe"
