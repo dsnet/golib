@@ -1,11 +1,18 @@
-package strconv
+// Copyright 2015, Joe Tsai. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE.md file.
 
-import "fmt"
-import "math"
-import "strings"
-import "strconv"
-import "testing"
-import "github.com/stretchr/testify/assert"
+package unitconv
+
+import (
+	"fmt"
+	"math"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 var (
 	nan  = math.NaN()

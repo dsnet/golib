@@ -2,13 +2,18 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE.md file.
 
-// Package strconv implements additional string conversion functionality.
-package strconv
+// Package unitconv implements string conversion functionality for
+// unit prefixes such as those from the SI and IEC standards.
+//
+// See https://wikipedia.org/wiki/unit_prefix
+package unitconv
 
-import "math"
-import "strings"
-import "strconv"
-import "errors"
+import (
+	"errors"
+	"math"
+	"strconv"
+	"strings"
+)
 
 // These are the different modes for Prefix string conversion.
 const (
@@ -272,7 +277,7 @@ func ParsePrefix(str string, mode int) (val float64, err error) {
 	case Base1024, IEC:
 		return val * scaleIEC[exp+len(scaleSI)/2], nil
 	default:
-		return 0, errors.New("strconv: invalid mode")
+		return 0, errors.New("unitconv: invalid mode")
 	}
 
 fail:
