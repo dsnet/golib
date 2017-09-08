@@ -4,13 +4,13 @@
 
 package hashutil
 
-import "hash/adler32"
-import "hash/crc32"
-import "hash/crc64"
-import "strings"
-import "testing"
-
-//import "github.com/stretchr/testify/assert"
+import (
+	"hash/adler32"
+	"hash/crc32"
+	"hash/crc64"
+	"strings"
+	"testing"
+)
 
 // shortString truncates long strings into something more human readable.
 func shortString(s string) string {
