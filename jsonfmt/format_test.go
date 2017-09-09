@@ -1,11 +1,12 @@
 // Copyright 2017, Joe Tsai. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE.md file.
-package jsonutil
+
+package jsonfmt
 
 import "testing"
 
-func TestMinify(t *testing.T) {
+func TestFormat(t *testing.T) {
 	tests := []struct {
 		in  string
 		out string
@@ -65,9 +66,9 @@ func TestMinify(t *testing.T) {
 	}}
 
 	for i, tt := range tests {
-		got, err := Minify([]byte(tt.in))
+		got, err := Format([]byte(tt.in), Minify())
 		if string(got) != tt.out || err != tt.err {
-			t.Errorf("test %d, Minify(%q):\ngot  (%q, %v)\nwant (%q, %v)", i, tt.in, got, err, tt.out, tt.err)
+			t.Errorf("test %d, Format(%q, Minify()):\ngot  (%q, %v)\nwant (%q, %v)", i, tt.in, got, err, tt.out, tt.err)
 		}
 	}
 }

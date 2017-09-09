@@ -2,22 +2,42 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE.md file.
 
-// Package jsonutil provides helper functions related to JSON.
-package jsonutil
+// Package jsonfmt provides helper functions related to JSON.
+package jsonfmt
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"regexp"
 )
 
-// Minify parses the input JSON and returns a minified form where all
-// superfluous white space has been removed. This function accepts a superset
-// of the JSON specification that allows comments and trailing commas after the
-// last element in an object or array. If err is nil, the output is guaranteed
-// to be valid JSON, otherwise the output is a best effort at sanitizing
-// the input.
-func Minify(s []byte) (out []byte, err error) {
+// Option configures how to format JSON.
+type Option interface {
+	option()
+}
+
+type minify struct{ Option }
+
+// Minify configures Format to produce the minimal representation of the input.
+// If Format returns no error, then the output is guaranteed to be valid JSON,
+func Minify() Option {
+	return minify{}
+}
+
+// Format parses and formats the input JSON according to provided Options.
+// If err is non-nil, then the output is a best effort at processing the input.
+//
+// This function accepts a superset of the JSON specification that allows
+// comments and trailing commas after the last element in an object or array.
+func Format(s []byte, opts ...Option) (out []byte, err error) {
+	if len(opts) != 1 {
+		return s, errors.New("jsonfmt: only Minify option is currently allowed")
+	}
+	if _, ok := opts[0].(minify); !ok {
+		return s, errors.New("jsonfmt: only Minify option is currently allowed")
+	}
+
 	m := minifier{in: s}
 	defer m.errRecover(&out, &err)
 	m.parseIgnored()
@@ -132,7 +152,7 @@ func (m *minifier) parseChar(c uint8, what string) {
 type stringError string
 
 func (es stringError) Error() string {
-	return string(es)
+	return "jsonfmt: " + string(es)
 }
 
 func (m *minifier) errPanic(f string, x ...interface{}) {
