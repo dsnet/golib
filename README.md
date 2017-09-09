@@ -19,6 +19,7 @@ Run the command:
 | Package | Description |
 | :------ | :---------- |
 | [bufpipe](http://godoc.org/github.com/dsnet/golib/bufpipe) | Package bufpipe implements a buffered pipe. |
+| [cron](http://godoc.org/github.com/dsnet/golib/cron) | Package cron provides functionality for parsing and running cron schedules. |
 | [hashutil](http://godoc.org/github.com/dsnet/golib/hashutil) | Package hashutil provides specialized hash functionality. |
 | [jsonutil](http://godoc.org/github.com/dsnet/golib/jsonutil) | Package jsonutil provides helper functions related to JSON. |
 | [unitconv](http://godoc.org/github.com/dsnet/golib/unitconv) | Package unitconv implements string conversion functionality for unit prefixes. |
