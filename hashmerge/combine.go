@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE.md file.
 
-// Package hashutil provides specialized hash functionality.
-package hashutil
+// Package hashmerge provides functionality for merging hashes.
+package hashmerge
 
 // The origin of the CombineAdler32, CombineCRC32, and CombineCRC64 functions
 // in this package is the adler32_combine, crc32_combine, gf2_matrix_times,
@@ -47,7 +47,7 @@ package hashutil
 //	adler32.Checksum(AB) == CombineAdler32(adler32.Checksum(A), adler32.Checksum(B), len(B))
 func CombineAdler32(adler1, adler2 uint32, len2 int64) uint32 {
 	if len2 < 0 {
-		panic("hashutil: negative length")
+		panic("hashmerge: negative length")
 	}
 
 	const mod = 65521
@@ -81,7 +81,7 @@ func CombineAdler32(adler1, adler2 uint32, len2 int64) uint32 {
 //	crc32.Checksum(AB, tab) == CombineCRC32(poly, crc32.Checksum(A, tab), crc32.Checksum(B, tab), len(B))
 func CombineCRC32(poly, crc1, crc2 uint32, len2 int64) uint32 {
 	if len2 < 0 {
-		panic("hashutil: negative length")
+		panic("hashmerge: negative length")
 	}
 
 	// Translation of gf2_matrix_times from zlib.
@@ -154,7 +154,7 @@ func CombineCRC32(poly, crc1, crc2 uint32, len2 int64) uint32 {
 //	crc64.Checksum(AB, tab) == CombineCRC64(poly, crc64.Checksum(A, tab), crc64.Checksum(B, tab), len(B))
 func CombineCRC64(poly, crc1, crc2 uint64, len2 int64) uint64 {
 	if len2 < 0 {
-		panic("hashutil: negative length")
+		panic("hashmerge: negative length")
 	}
 
 	// Translation of gf2_matrix_times from zlib.
