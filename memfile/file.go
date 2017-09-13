@@ -8,12 +8,14 @@ package memfile
 import (
 	"errors"
 	"io"
+	"sync"
 )
 
 var errInvalid = errors.New("invalid argument")
 
 // File is an in-memory emulation of the IO operations of os.File.
 type File struct {
+	m sync.Mutex
 	b []byte
 	i int
 }
@@ -22,7 +24,10 @@ type File struct {
 // It returns the number of bytes read and any error encountered.
 // At end of file, Read returns (0, io.EOF).
 func (fb *File) Read(b []byte) (int, error) {
-	n, err := fb.ReadAt(b, int64(fb.i))
+	fb.m.Lock()
+	defer fb.m.Unlock()
+
+	n, err := fb.readAt(b, int64(fb.i))
 	fb.i += n
 	return n, err
 }
@@ -31,6 +36,11 @@ func (fb *File) Read(b []byte) (int, error) {
 // It returns the number of bytes read and the error, if any.
 // At end of file, that error is io.EOF.
 func (fb *File) ReadAt(b []byte, off int64) (int, error) {
+	fb.m.Lock()
+	defer fb.m.Unlock()
+	return fb.readAt(b, off)
+}
+func (fb *File) readAt(b []byte, off int64) (int, error) {
 	if off < 0 || int64(int(off)) < off {
 		return 0, errInvalid
 	}
@@ -49,7 +59,10 @@ func (fb *File) ReadAt(b []byte, off int64) (int, error) {
 // If the current file offset is past the io.EOF, then the space in-between are
 // implicitly filled with zero bytes.
 func (fb *File) Write(b []byte) (int, error) {
-	n, err := fb.WriteAt(b, int64(fb.i))
+	fb.m.Lock()
+	defer fb.m.Unlock()
+
+	n, err := fb.writeAt(b, int64(fb.i))
 	fb.i += n
 	return n, err
 }
@@ -59,11 +72,16 @@ func (fb *File) Write(b []byte) (int, error) {
 // If off lies past the io.EOF, then the space in-between are implicitly filled
 // with zero bytes.
 func (fb *File) WriteAt(b []byte, off int64) (int, error) {
+	fb.m.Lock()
+	defer fb.m.Unlock()
+	return fb.writeAt(b, off)
+}
+func (fb *File) writeAt(b []byte, off int64) (int, error) {
 	if off < 0 || int64(int(off)) < off {
 		return 0, errInvalid
 	}
 	if off > int64(len(fb.b)) {
-		fb.Truncate(off)
+		fb.truncate(off)
 	}
 	n := copy(fb.b[off:], b)
 	fb.b = append(fb.b, b[n:]...)
@@ -74,6 +92,9 @@ func (fb *File) WriteAt(b []byte, off int64) (int, error) {
 // interpreted according to whence: 0 means relative to the origin of the file,
 // 1 means relative to the current offset, and 2 means relative to the end.
 func (fb *File) Seek(ofs int64, whence int) (int64, error) {
+	fb.m.Lock()
+	defer fb.m.Unlock()
+
 	var abs int64
 	switch whence {
 	case io.SeekStart:
@@ -94,6 +115,11 @@ func (fb *File) Seek(ofs int64, whence int) (int64, error) {
 
 // Truncate changes the size of the file. It does not change the I/O offset.
 func (fb *File) Truncate(n int64) error {
+	fb.m.Lock()
+	defer fb.m.Unlock()
+	return fb.truncate(n)
+}
+func (fb *File) truncate(n int64) error {
 	switch {
 	case n < 0 || int64(int(n)) < n:
 		return errInvalid
@@ -109,5 +135,7 @@ func (fb *File) Truncate(n int64) error {
 // Bytes returns the full contents of the File.
 // The result in only valid until the next Write, WriteAt, or Truncate call.
 func (fb *File) Bytes() []byte {
+	fb.m.Lock()
+	defer fb.m.Unlock()
 	return fb.b
 }

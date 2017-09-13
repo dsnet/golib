@@ -17,12 +17,27 @@ type Option interface {
 	option()
 }
 
-type minify struct{ Option }
+type (
+	minify      struct{ Option }
+	standardize struct{ Option }
+)
 
 // Minify configures Format to produce the minimal representation of the input.
 // If Format returns no error, then the output is guaranteed to be valid JSON,
 func Minify() Option {
 	return minify{}
+}
+
+// Standardize configures Format to produce valid JSON according to ECMA-404.
+// This strips any comments and trailing commas.
+func Standardize() Option {
+	return standardize{}
+}
+
+// EncodeStrings configures Format to encode string literals in a specific way.
+// By default, Format re-encodes string literals as UTF-8.
+func EncodeStrings() Option {
+	return nil
 }
 
 // Format parses and formats the input JSON according to provided Options.
