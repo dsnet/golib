@@ -14,10 +14,17 @@ import (
 var errInvalid = errors.New("invalid argument")
 
 // File is an in-memory emulation of the IO operations of os.File.
+// The zero value for File is an empty file ready to use.
 type File struct {
 	m sync.Mutex
 	b []byte
 	i int
+}
+
+// NewFile creates and initializes a new File using b as its initial contents.
+// The new File takes ownership of b.
+func NewFile(b []byte) *File {
+	return &File{b: b}
 }
 
 // Read reads up to len(b) bytes from the File.
