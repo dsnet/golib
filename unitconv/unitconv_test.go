@@ -5,329 +5,269 @@
 package unitconv
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-var (
-	nan  = math.NaN()
-	pinf = math.Inf(+1)
-	ninf = math.Inf(-1)
-)
+// TestExact tests round-trip formatting and parsing of exact values.
+func TestExact(t *testing.T) {
+	t.Run(SI.String(), func(t *testing.T) {
+		wantStrs := strings.Split("yzafpnμm.kMGTPEZY", "")
+		for _, sign := range []float64{-1, +1} {
+			for i, f := range scaleSI {
+				want := sign * f
+				str := FormatPrefix(want, SI, -1)
+				got, err := ParsePrefix(str, SI)
 
-const (
-	hiThres = 1.000000000000001
-	loThres = 0.999999999999999
-)
+				if got != want || err != nil {
+					t.Errorf("ParsePrefix(%s, %v):\ngot  (%v, %v)\nwant (%v, nil)", str, SI, got, err, want)
+				}
 
-func atof(s string) float64 {
-	f, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		panic(err)
-	}
-	return f
-}
-
-func signStr(f float64) string {
-	if f >= 0 {
-		return ""
-	}
-	return "-"
-}
-
-func stripDot(s string) string {
-	if s == "." {
-		return ""
-	}
-	return s
-}
-
-func addIEC(s string) string {
-	if s == "" {
-		return ""
-	}
-	return s + "i"
-}
-
-func normToAlt(s string) string {
-	for _, ch := range s {
-		if alt, ok := mapNormToAlt[ch]; ok {
-			return string(alt)
+				wantStr := fmt.Sprintf("%v%s", sign, strings.Trim(wantStrs[i], "."))
+				if str != wantStr {
+					t.Errorf("string mismatch: got %s, want %s", str, wantStr)
+				}
+			}
 		}
-	}
-	return s
+	})
+	t.Run(Base1024.String(), func(t *testing.T) {
+		testExact(t, scaleIEC, Base1024)
+	})
+	t.Run(IEC.String(), func(t *testing.T) {
+		testExact(t, scaleIEC[len(scaleIEC)/2:], IEC)
+	})
 }
 
-func altToNorm(s string) string {
-	for _, ch := range s {
-		if norm, ok := mapAltToNorm[ch]; ok {
-			return string(norm)
-		}
-	}
-	return s
-}
-
-func split(s string) (string, string) {
-	if i := strings.IndexAny(s, parsePrefixes); i >= 0 {
-		return s[:i], s[i:]
-	}
-	return s, ""
-}
-
-func TestPrefixExactSI(t *testing.T) {
-	for _, sign := range []float64{-1, +1} {
-		for i, f := range scaleSI {
-			str := FormatPrefix(sign*f, SI, -1)
-			flt, err := ParsePrefix(str, SI)
-
-			pre := normToAlt(stripDot(string(prefixes[i])))
-			assert.Equal(t, signStr(sign)+"1"+pre, str)
-			assert.Equal(t, sign*f, flt)
-			assert.Equal(t, nil, err)
-		}
-	}
-}
-
-func testPrefixExact(t *testing.T, minExp, mode int, wrap func(string) string) {
-	var pres = prefixes[minExp+len(divPrefixes):]
-	var str, pre string
-	var flt float64
-	var err error
-
-	for _, sign := range []float64{-1, +1} {
-		var f0 = sign * scaleIEC[minExp+len(divPrefixes)]
-
-		str = FormatPrefix(f0/2, mode, -1)
-		flt, err = ParsePrefix(str, mode)
-		pre = wrap(string(pres[0]))
-		assert.Equal(t, signStr(sign)+"0.5"+pre, str)
-		assert.Equal(t, f0/2, flt)
-		assert.Equal(t, nil, err)
-
-		for i := 0; i < 10*len(pres); i++ {
-			str = FormatPrefix(f0, mode, -1)
-			flt, err = ParsePrefix(str, mode)
-
-			pre := wrap(string(pres[(i / 10)]))
-			ord := fmt.Sprintf("%d", 1<<uint(i%10))
-			assert.Equal(t, signStr(sign)+ord+pre, str)
-			assert.Equal(t, f0, flt)
-			assert.Equal(t, nil, err)
-			f0 *= 2
-		}
-
-		str = FormatPrefix(f0, mode, -1)
-		flt, err = ParsePrefix(str, mode)
-		pre = wrap(string(pres[len(pres)-1]))
-		assert.Equal(t, signStr(sign)+"1024"+pre, str)
-		assert.Equal(t, f0, flt)
-		assert.Equal(t, nil, err)
-	}
-}
-
-func TestPrefixExactBase1024(t *testing.T) {
-	wrap := func(s string) string { return stripDot(s) }
-	testPrefixExact(t, minExp, Base1024, wrap)
-}
-
-func TestPrefixExactIEC(t *testing.T) {
-	wrap := func(s string) string { return addIEC(stripDot(s)) }
-	testPrefixExact(t, 0, IEC, wrap)
-}
-
-func testPrefixBoundary(t *testing.T, scales []float64, prefixes string, mode int, wrap func(string) string) {
-	var str, str1, str2, pre string
-	var flt, fabs, fnum float64
-	var err error
-
-	base := 1024.0
-	if mode == SI {
-		base = 1000.0
-	}
-
+func testExact(t *testing.T, scales []float64, m Mode) {
+	wantStrs := strings.Split("yzafpnum.KMGTPEZY", "")
+	wantStrs = wantStrs[len(wantStrs)-len(scales):]
 	for _, sign := range []float64{-1, +1} {
 		for i, f := range scales {
-			// Round towards zero.
-			str = FormatPrefix(math.Nextafter(sign*f, sign*ninf), mode, -1)
-			flt, err = ParsePrefix(str, mode)
-			fabs = math.Abs(flt)
+			want := sign * f
+			for j := 0; j < 10; j++ {
+				str := FormatPrefix(want, m, -1)
+				got, err := ParsePrefix(str, m)
 
-			pre = string(prefixes[0])
-			if i > 0 {
-				pre = string(prefixes[i-1])
+				if got != want || err != nil {
+					t.Errorf("ParsePrefix(%s, %v):\ngot  (%v, %v)\nwant (%v, nil)", str, m, got, err, want)
+				}
+
+				wantStr := fmt.Sprintf("%d%s", int(sign)<<uint(j), strings.Trim(wantStrs[i], "."))
+				if m == IEC && i > 0 {
+					wantStr += "i"
+				}
+				if str != wantStr {
+					t.Errorf("string mismatch: got %s, want %s", str, wantStr)
+				}
+
+				want *= 2
 			}
-			pre = wrap(pre)
-			str1, str2 = split(str)
-			fnum = math.Abs(atof(str1))
-			if i == 0 {
-				assert.True(t, 1.0*loThres <= fnum && fnum <= 1.0)
-			} else {
-				assert.True(t, base*loThres <= fnum && fnum <= base)
-			}
-			assert.Equal(t, pre, str2)
-			assert.True(t, f*loThres <= fabs && fabs <= f)
-			assert.Equal(t, math.Signbit(flt), math.Signbit(sign))
-			assert.Equal(t, nil, err)
-
-			// Round away from zero.
-			str = FormatPrefix(math.Nextafter(sign*f, sign*pinf), mode, -1)
-			flt, err = ParsePrefix(str, mode)
-			fabs = math.Abs(flt)
-
-			pre = wrap(string(prefixes[i]))
-			str1, str2 = split(str)
-			fnum = math.Abs(atof(str1))
-			assert.True(t, 1.0 <= fnum && fnum <= 1.0*hiThres)
-			assert.Equal(t, pre, str2)
-			assert.True(t, f <= fabs && fabs <= f*hiThres)
-			assert.Equal(t, math.Signbit(flt), math.Signbit(sign))
-			assert.Equal(t, nil, err)
 		}
 	}
 }
 
-func TestPrefixBoundarySI(t *testing.T) {
-	wrap := func(s string) string { return normToAlt(stripDot(s)) }
-	testPrefixBoundary(t, scaleSI, prefixes, SI, wrap)
+// TestBoundary tests round-trip formatting and parsing at unit boundaries.
+func TestBoundary(t *testing.T) {
+	t.Run(SI.String(), func(t *testing.T) {
+		testBoundary(t, scaleSI, prefixes, SI)
+	})
+	t.Run(Base1024.String(), func(t *testing.T) {
+		testBoundary(t, scaleIEC, prefixes, Base1024)
+	})
+	t.Run(IEC.String(), func(t *testing.T) {
+		idx := len(prefixes) / 2
+		testBoundary(t, scaleIEC[idx:], prefixes[idx:], IEC)
+	})
 }
 
-func TestPrefixBoundaryBase1024(t *testing.T) {
-	wrap := func(s string) string { return altToNorm(stripDot(s)) }
-	testPrefixBoundary(t, scaleIEC, prefixes, Base1024, wrap)
-}
+func testBoundary(t *testing.T, scales []float64, prefixes string, m Mode) {
+	const errFrac = 1e-12
+	for _, sign := range []float64{-1, +1} {
+		for _, roundDir := range []float64{math.Inf(-1), math.Inf(+1)} {
+			for i, f := range scales {
+				want := math.Nextafter(sign*f, sign*roundDir)
+				str := FormatPrefix(want, m, -1)
+				got, err := ParsePrefix(str, m)
 
-func TestPrefixBoundaryIEC(t *testing.T) {
-	idx := len(prefixes) / 2
-	wrap := func(s string) string { return addIEC(altToNorm(stripDot(s))) }
-	testPrefixBoundary(t, scaleIEC[idx:], prefixes[idx:], IEC, wrap)
-}
+				// Check round-trip was close enough.
+				opt := cmpopts.EquateApprox(errFrac, 0)
+				if !cmp.Equal(got, want, opt) || err != nil {
+					t.Errorf("ParsePrefix(%s, %v):\ngot  (%v, %v)\nwant (%v, nil)", str, m, got, err, want)
+				}
 
-func TestPrefixFailParse(t *testing.T) {
-	for _, x := range []struct {
-		str  string
-		mode int
-		ok   bool
-		flt  float64
-	}{
-		{"", SI, false, 0},
-		{"NaN1M", SI, false, 0},
-		{"1", IEC, true, Unit},
-		{"1 ", IEC, false, 0},
-		{"1M", IEC, false, 0},
-		{"1Mi", SI, false, 0},
-		{"+1M", Base1024, true, +Mebi},
-		{"-1Mi", Base1024, true, -Mebi},
-		{"+1Mi", Base1024, true, +Mebi},
-		{"1E-3", SI, false, 0},
-		{"1e-3", SI, false, 0},
-		{"1ki", SI, false, 0},
-		{"1ki", IEC, false, 0},
-		{"1ki", Base1024, true, Kibi},
-		{"+1ki", Base1024, true, Kibi},
-		{"1μi", SI, false, 0},
-		{"1μi", IEC, false, 0},
-		{"1μi", Base1024, false, 0},
-		{"1k", SI, true, Kilo},
-		{"1k", IEC, false, 0},
-		{"1k", Base1024, true, Kibi},
-		{"1μ", SI, true, Micro},
-		{"1μ ", SI, false, 0},
-		{" 1μ", SI, false, 0},
-		{"+1μ", SI, true, Micro},
-		{"1μ", IEC, false, 0},
-		{"1μ", Base1024, true, 1.0 / Mebi},
-		{"+1μ", Base1024, true, 1.0 / Mebi},
-		{"1mi", IEC, false, 0},
-		{"0.000001", SI, true, Micro},
-		{"1000000u", SI, true, Unit},
-		{"1048576", Base1024, true, Mebi},
-		{"1048576Ki", IEC, true, Gibi},
-		{"nAn", SI, true, nan},
-		{"+nan", Base1024, false, 0},
-		{"-NAN", IEC, false, 0},
-		{"INF", SI, true, pinf},
-		{"+iNf", Base1024, true, pinf},
-		{"-inF", IEC, true, ninf},
-		{"", AutoParse, false, 0},
-		{"123", AutoParse, true, 123},
-		{"123Ki", AutoParse, true, 123 * Kibi},
-		{"123k", AutoParse, true, 123 * Kilo},
-		{"123K", AutoParse, true, 123 * Kilo},
-		{"3Mi", AutoParse, true, 3 * Mebi},
-		{"3M", AutoParse, true, 3 * Mega},
-		{"3E-3", AutoParse, true, 3E-3},
-		{"2E2", AutoParse, true, 2E2},
-	} {
-		flt, err := ParsePrefix(x.str, x.mode)
-		if x.ok {
-			assert.Nil(t, err)
-			if !math.IsNaN(x.flt) || !math.IsNaN(flt) {
-				assert.Equal(t, x.flt, flt)
+				// Fraction must be either >= 1 or < base.
+				fraction, err := strconv.ParseFloat(strings.TrimRight(str, parsePrefixes+"i"), 64)
+				if err != nil {
+					t.Errorf("unexpected ParseFloat error: %v", err)
+				}
+				if roundDir < 0 && i == 0 {
+					fraction *= m.base()
+				}
+				if got, want := math.Signbit(fraction), math.Signbit(want); got != want {
+					t.Errorf("string %s: Signbit(fraction) = %v, want %v", str, got, want)
+				}
+				fraction = math.Abs(fraction)
+				if roundDir < 0 && !(m.base()-errFrac <= fraction && fraction < m.base()) {
+					t.Errorf("string %s: Abs(fraction) = %v, want (%v <= got < %v)", str, fraction, m.base()-errFrac, m.base())
+				}
+				if roundDir > 0 && !(1 <= fraction && fraction < 1+errFrac) {
+					t.Errorf("string %s: Abs(fraction) = %v, want (%v <= got < %v)", str, fraction, 1, 1+errFrac)
+				}
 			}
-		} else {
-			assert.NotNil(t, err)
 		}
 	}
 }
 
-func TestPrefix(t *testing.T) {
+// TestRoundtrip tests formatting and parsing in a round-trip manner.
+func TestRoundtrip(t *testing.T) {
+	for _, m := range []Mode{SI, Base1024, IEC} {
+		t.Run(m.String(), func(t *testing.T) {
+			for _, prec := range []int{-2, -1, 0, +1, +2} {
+				testRoundtrip(t, m, prec)
+			}
+		})
+	}
+}
+
+func testRoundtrip(t *testing.T, m Mode, prec int) {
 	// Test for zero, NaN, -Inf, and +Inf.
-	for _, mode := range []int{SI, Base1024, IEC} {
-		for _, prec := range []int{-1, 0, +1} {
-			for _, f := range []float64{-0.0, +0.0, nan, ninf, pinf} {
-				str := FormatPrefix(f, mode, prec)
-				flt, err := ParsePrefix(str, mode)
+	for _, want := range []float64{-0.0, +0.0, math.NaN(), math.Inf(-1), math.Inf(+1)} {
+		str := FormatPrefix(want, m, prec)
+		if wantStr := strconv.FormatFloat(want, 'f', prec, 64); str != wantStr {
+			t.Errorf("FormatPrefix(%v, %v, %v):\ngot  %v\nwant %v", want, m, prec, str, wantStr)
+		}
 
-				assert.Equal(t, str, strconv.FormatFloat(f, 'f', prec, 64))
-				if !math.IsNaN(f) || !math.IsNaN(flt) {
-					assert.Equal(t, f, flt)
-				}
-				assert.Equal(t, nil, err)
-			}
+		got, err := ParsePrefix(str, m)
+		if !cmp.Equal(got, want, cmpopts.EquateNaNs()) || err != nil {
+			t.Errorf("ParsePrefix(%v, %v):\ngot  (%v, %v)\n want (%v, nil)", str, m, got, err, want)
 		}
 	}
 
-	// Test for a huge range of values.
-	for _, mode := range []int{SI, Base1024, IEC} {
-		for _, prec := range []int{-1, 0, +1, +2} {
-			for i := -100; i <= +100; i++ {
-				f := 1.234567890123456 * math.Pow(10, float64(i))
-				str := FormatPrefix(f, mode, prec)
-				flt, err := ParsePrefix(str, mode)
-				str1, _ := split(str)
-				fnum := math.Abs(atof(str1))
+	// Test for a large range of values.
+	for i := -100; i <= +100; i++ {
+		want := 1.234567890123456 * math.Pow(10, float64(i))
+		str := FormatPrefix(want, m, prec)
+		got, err := ParsePrefix(str, m)
 
-				// Ensure that we maintain decent precision.
-				if prec < 0 {
-					assert.True(t, f*loThres <= flt && flt <= f*hiThres)
-				} else if flt != 0 {
-					assert.True(t, f*0.5 <= flt && flt <= f*2)
-				}
+		// Ensure that we maintain decent precision.
+		opt := cmpopts.EquateApprox(1e-12, factorFloor(want, m)/2)
+		if !cmp.Equal(got, want, opt) || err != nil {
+			t.Errorf("ParsePrefix(%s, %v):\ngot  (%v, %v)\nwant (%v, nil)", str, m, got, err, want)
+		}
 
-				// Ensure that we choose the best scale if possible.
-				var base, minScale, maxScale float64
-				switch mode {
-				case SI:
-					base = 1000.0
-					minScale, maxScale = scaleSI[0], scaleSI[len(scaleSI)-1]
-				case Base1024:
-					base = 1024.0
-					minScale, maxScale = scaleIEC[0], scaleIEC[len(scaleIEC)-1]
-				case IEC:
-					base = 1024.0
-					minScale, maxScale = 1, scaleIEC[len(scaleIEC)-1]
-				}
-				if minScale <= f && f <= maxScale {
-					assert.True(t, 1.0 <= fnum && fnum <= base)
-				}
-
-				assert.Equal(t, nil, err)
+		// Ensure that we choose the best scale if possible.
+		if min, max := factorRanges(m); min <= want && want <= max {
+			fraction, err := strconv.ParseFloat(strings.TrimRight(str, parsePrefixes+"i"), 64)
+			if err != nil {
+				t.Errorf("unexpected ParseFloat error: %v", err)
 			}
+			fraction = math.Abs(fraction)
+			if !(1.0 <= fraction && fraction < m.base()) {
+				t.Errorf("string %v: Abs(fraction) = %v, want (1.0 <= got < %v)", str, fraction, m.base())
+			}
+		}
+	}
+}
+
+// factorFloor returns the closest factor for that mode that is below v.
+func factorFloor(v float64, m Mode) float64 {
+	exp := math.Log2(v) / math.Log2(m.base())
+	factor := math.Pow(m.base(), math.Trunc(exp))
+	switch min, max := factorRanges(m); {
+	case factor < min:
+		return min
+	case factor > max:
+		return max
+	default:
+		return factor
+	}
+}
+
+// factorRanges returns the mininum and maximum factors for that mode.
+func factorRanges(m Mode) (min, max float64) {
+	switch m {
+	case SI:
+		return scaleSI[0], scaleSI[len(scaleSI)-1]
+	case Base1024:
+		return scaleIEC[0], scaleIEC[len(scaleIEC)-1]
+	case IEC:
+		return 1.0, scaleIEC[len(scaleIEC)-1]
+	default:
+		return math.NaN(), math.NaN()
+	}
+}
+
+// TestParsePrefix tests parsing of various string inputs.
+func TestParsePrefix(t *testing.T) {
+	anyError := errors.New("any error")
+	tests := []struct {
+		in      string
+		mode    Mode
+		want    float64
+		wantErr error
+	}{
+		{"", SI, 0, anyError},
+		{"NaN1M", SI, 0, anyError},
+		{"1", IEC, Unit, nil},
+		{"1 ", IEC, 0, anyError},
+		{"1M", IEC, 0, anyError},
+		{"1Mi", SI, 0, anyError},
+		{"+1M", Base1024, +Mebi, nil},
+		{"-1Mi", Base1024, -Mebi, nil},
+		{"+1Mi", Base1024, +Mebi, nil},
+		{"1E-3", SI, 0.001, anyError},
+		{"1e-3", SI, 0.001, anyError},
+		{"1ki", SI, 0, anyError},
+		{"1ki", IEC, 0, anyError},
+		{"1ki", Base1024, Kibi, nil},
+		{"+1ki", Base1024, Kibi, nil},
+		{"1μi", SI, 0, anyError},
+		{"1μi", IEC, 0, anyError},
+		{"1μi", Base1024, 0, anyError},
+		{"1k", SI, Kilo, nil},
+		{"1k", IEC, 0, anyError},
+		{"1k", Base1024, Kibi, nil},
+		{"1μ", SI, Micro, nil},
+		{"1μ ", SI, 0, anyError},
+		{" 1μ", SI, 0, anyError},
+		{"+1μ", SI, Micro, nil},
+		{"1μ", IEC, 0, anyError},
+		{"1μ", Base1024, 1.0 / Mebi, nil},
+		{"+1μ", Base1024, 1.0 / Mebi, nil},
+		{"1mi", IEC, 0, anyError},
+		{"0.000001", SI, Micro, nil},
+		{"1000000u", SI, Unit, nil},
+		{"1048576", Base1024, Mebi, nil},
+		{"1048576Ki", IEC, Gibi, nil},
+		{"nAn", SI, math.NaN(), nil},
+		{"+nan", Base1024, 0, anyError},
+		{"-NAN", IEC, 0, anyError},
+		{"INF", SI, math.Inf(+1), nil},
+		{"+iNf", Base1024, math.Inf(+1), nil},
+		{"-inF", IEC, math.Inf(-1), nil},
+		{"", AutoParse, 0, anyError},
+		{"123", AutoParse, 123, nil},
+		{"123Ki", AutoParse, 123 * Kibi, nil},
+		{"123k", AutoParse, 123 * Kilo, nil},
+		{"123K", AutoParse, 123 * Kilo, nil},
+		{"3Mi", AutoParse, 3 * Mebi, nil},
+		{"3M", AutoParse, 3 * Mega, nil},
+		{"3E-3", AutoParse, 3E-3, nil},
+		{"2E2", AutoParse, 2E2, nil},
+	}
+
+	for _, tt := range tests {
+		got, gotErr := ParsePrefix(tt.in, tt.mode)
+		if !cmp.Equal(got, tt.want, cmpopts.EquateNaNs()) || (gotErr == nil) != (tt.wantErr == nil) {
+			t.Errorf("ParsePrefix(%q, %d) = (%v, %v), want (%v, %v)",
+				tt.in, tt.mode, got, gotErr, tt.want, tt.wantErr)
 		}
 	}
 }
