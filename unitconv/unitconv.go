@@ -56,21 +56,6 @@ const (
 	IEC
 )
 
-func (m Mode) String() string {
-	switch m {
-	case AutoParse:
-		return "AutoParse"
-	case SI:
-		return "SI"
-	case Base1024:
-		return "Base1024"
-	case IEC:
-		return "IEC"
-	default:
-		return "<unknown>"
-	}
-}
-
 func (m Mode) base() float64 {
 	switch m {
 	case SI:

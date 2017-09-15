@@ -16,6 +16,49 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
+func (m Mode) String() string {
+	switch m {
+	case AutoParse:
+		return "AutoParse"
+	case SI:
+		return "SI"
+	case Base1024:
+		return "Base1024"
+	case IEC:
+		return "IEC"
+	default:
+		return "<unknown>"
+	}
+}
+
+// factorFloor returns the closest factor for that mode that is below v.
+func (m Mode) factorFloor(v float64) float64 {
+	exp := math.Log2(v) / math.Log2(m.base())
+	factor := math.Pow(m.base(), math.Trunc(exp))
+	switch min, max := m.factorRanges(); {
+	case factor < min:
+		return min
+	case factor > max:
+		return max
+	default:
+		return factor
+	}
+}
+
+// factorRanges returns the mininum and maximum factors for that mode.
+func (m Mode) factorRanges() (min, max float64) {
+	switch m {
+	case SI:
+		return scaleSI[0], scaleSI[len(scaleSI)-1]
+	case Base1024:
+		return scaleIEC[0], scaleIEC[len(scaleIEC)-1]
+	case IEC:
+		return 1.0, scaleIEC[len(scaleIEC)-1]
+	default:
+		return math.NaN(), math.NaN()
+	}
+}
+
 // TestExact tests round-trip formatting and parsing of exact values.
 func TestExact(t *testing.T) {
 	t.Run(SI.String(), func(t *testing.T) {
@@ -157,13 +200,13 @@ func testRoundtrip(t *testing.T, m Mode, prec int) {
 		got, err := ParsePrefix(str, m)
 
 		// Ensure that we maintain decent precision.
-		opt := cmpopts.EquateApprox(1e-12, factorFloor(want, m)/2)
+		opt := cmpopts.EquateApprox(1e-12, m.factorFloor(want)/2)
 		if !cmp.Equal(got, want, opt) || err != nil {
 			t.Errorf("ParsePrefix(%s, %v):\ngot  (%v, %v)\nwant (%v, nil)", str, m, got, err, want)
 		}
 
 		// Ensure that we choose the best scale if possible.
-		if min, max := factorRanges(m); min <= want && want <= max {
+		if min, max := m.factorRanges(); min <= want && want <= max {
 			fraction, err := strconv.ParseFloat(strings.TrimRight(str, parsePrefixes+"i"), 64)
 			if err != nil {
 				t.Errorf("unexpected ParseFloat error: %v", err)
@@ -173,34 +216,6 @@ func testRoundtrip(t *testing.T, m Mode, prec int) {
 				t.Errorf("string %v: Abs(fraction) = %v, want (1.0 <= got < %v)", str, fraction, m.base())
 			}
 		}
-	}
-}
-
-// factorFloor returns the closest factor for that mode that is below v.
-func factorFloor(v float64, m Mode) float64 {
-	exp := math.Log2(v) / math.Log2(m.base())
-	factor := math.Pow(m.base(), math.Trunc(exp))
-	switch min, max := factorRanges(m); {
-	case factor < min:
-		return min
-	case factor > max:
-		return max
-	default:
-		return factor
-	}
-}
-
-// factorRanges returns the mininum and maximum factors for that mode.
-func factorRanges(m Mode) (min, max float64) {
-	switch m {
-	case SI:
-		return scaleSI[0], scaleSI[len(scaleSI)-1]
-	case Base1024:
-		return scaleIEC[0], scaleIEC[len(scaleIEC)-1]
-	case IEC:
-		return 1.0, scaleIEC[len(scaleIEC)-1]
-	default:
-		return math.NaN(), math.NaN()
 	}
 }
 
