@@ -13,7 +13,7 @@ import (
 
 var errInvalid = errors.New("invalid argument")
 
-// File is an in-memory emulation of the IO operations of os.File.
+// File is an in-memory emulation of the I/O operations of os.File.
 // The zero value for File is an empty file ready to use.
 type File struct {
 	m sync.Mutex
@@ -39,13 +39,13 @@ func (fb *File) Read(b []byte) (int, error) {
 	return n, err
 }
 
-// ReadAt reads len(b) bytes from the File starting at byte offset off.
+// ReadAt reads len(b) bytes from the File starting at byte offset.
 // It returns the number of bytes read and the error, if any.
 // At end of file, that error is io.EOF.
-func (fb *File) ReadAt(b []byte, off int64) (int, error) {
+func (fb *File) ReadAt(b []byte, offset int64) (int, error) {
 	fb.m.Lock()
 	defer fb.m.Unlock()
-	return fb.readAt(b, off)
+	return fb.readAt(b, offset)
 }
 func (fb *File) readAt(b []byte, off int64) (int, error) {
 	if off < 0 || int64(int(off)) < off {
@@ -74,14 +74,14 @@ func (fb *File) Write(b []byte) (int, error) {
 	return n, err
 }
 
-// WriteAt writes len(b) bytes to the File starting at byte offset off.
+// WriteAt writes len(b) bytes to the File starting at byte offset.
 // It returns the number of bytes written and an error, if any.
-// If off lies past the io.EOF, then the space in-between are implicitly filled
+// If offset lies past io.EOF, then the space in-between are implicitly filled
 // with zero bytes.
-func (fb *File) WriteAt(b []byte, off int64) (int, error) {
+func (fb *File) WriteAt(b []byte, offset int64) (int, error) {
 	fb.m.Lock()
 	defer fb.m.Unlock()
-	return fb.writeAt(b, off)
+	return fb.writeAt(b, offset)
 }
 func (fb *File) writeAt(b []byte, off int64) (int, error) {
 	if off < 0 || int64(int(off)) < off {
@@ -95,21 +95,21 @@ func (fb *File) writeAt(b []byte, off int64) (int, error) {
 	return len(b), nil
 }
 
-// Seek sets the offset for the next Read or Write on file to offset,
+// Seek sets the offset for the next Read or Write on file with offset,
 // interpreted according to whence: 0 means relative to the origin of the file,
 // 1 means relative to the current offset, and 2 means relative to the end.
-func (fb *File) Seek(ofs int64, whence int) (int64, error) {
+func (fb *File) Seek(offset int64, whence int) (int64, error) {
 	fb.m.Lock()
 	defer fb.m.Unlock()
 
 	var abs int64
 	switch whence {
 	case io.SeekStart:
-		abs = ofs
+		abs = offset
 	case io.SeekCurrent:
-		abs = int64(fb.i) + ofs
+		abs = int64(fb.i) + offset
 	case io.SeekEnd:
-		abs = int64(len(fb.b)) + ofs
+		abs = int64(len(fb.b)) + offset
 	default:
 		return 0, errInvalid
 	}
