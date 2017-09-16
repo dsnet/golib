@@ -59,6 +59,17 @@ func (m Mode) factorRanges() (min, max float64) {
 	}
 }
 
+// parseFraction parses the fractional component out of a unit-prefixed string.
+// E.g., "123.45Mi" parses as the number 123.45
+func parseFraction(t *testing.T, s string) float64 {
+	t.Helper()
+	fraction, err := strconv.ParseFloat(strings.TrimRight(s, parsePrefixes+"i"), 64)
+	if err != nil {
+		t.Errorf("unexpected ParseFloat error: %v", err)
+	}
+	return fraction
+}
+
 // TestExact tests round-trip formatting and parsing of exact values.
 func TestExact(t *testing.T) {
 	t.Run(SI.String(), func(t *testing.T) {
@@ -66,16 +77,16 @@ func TestExact(t *testing.T) {
 		for _, sign := range []float64{-1, +1} {
 			for i, f := range scaleSI {
 				want := sign * f
-				str := FormatPrefix(want, SI, -1)
-				got, err := ParsePrefix(str, SI)
 
-				if got != want || err != nil {
-					t.Errorf("ParsePrefix(%s, %v):\ngot  (%v, %v)\nwant (%v, nil)", str, SI, got, err, want)
+				gotStr := FormatPrefix(want, SI, -1)
+				wantStr := fmt.Sprintf("%v%s", sign, strings.Trim(wantStrs[i], "."))
+				if gotStr != wantStr {
+					t.Errorf("FormatPrefix(%v, %v, -1):\ngot  %q\nwant %q", want, SI, gotStr, wantStr)
 				}
 
-				wantStr := fmt.Sprintf("%v%s", sign, strings.Trim(wantStrs[i], "."))
-				if str != wantStr {
-					t.Errorf("string mismatch: got %s, want %s", str, wantStr)
+				got, err := ParsePrefix(gotStr, SI)
+				if got != want || err != nil {
+					t.Errorf("ParsePrefix(%q, %v):\ngot  (%v, %v)\nwant (%v, nil)", gotStr, SI, got, err, want)
 				}
 			}
 		}
@@ -93,24 +104,22 @@ func testExact(t *testing.T, scales []float64, m Mode) {
 	wantStrs = wantStrs[len(wantStrs)-len(scales):]
 	for _, sign := range []float64{-1, +1} {
 		for i, f := range scales {
-			want := sign * f
-			for j := 0; j < 10; j++ {
-				str := FormatPrefix(want, m, -1)
-				got, err := ParsePrefix(str, m)
+			for j := uint(0); j < 10; j++ {
+				want := float64(int(sign)<<j) * f
 
-				if got != want || err != nil {
-					t.Errorf("ParsePrefix(%s, %v):\ngot  (%v, %v)\nwant (%v, nil)", str, m, got, err, want)
-				}
-
-				wantStr := fmt.Sprintf("%d%s", int(sign)<<uint(j), strings.Trim(wantStrs[i], "."))
+				gotStr := FormatPrefix(want, m, -1)
+				wantStr := fmt.Sprintf("%d%s", int(sign)<<j, strings.Trim(wantStrs[i], "."))
 				if m == IEC && i > 0 {
 					wantStr += "i"
 				}
-				if str != wantStr {
-					t.Errorf("string mismatch: got %s, want %s", str, wantStr)
+				if gotStr != wantStr {
+					t.Errorf("FormatPrefix(%v, %v, -1):\ngot  %q\nwant %q", want, m, gotStr, wantStr)
 				}
 
-				want *= 2
+				got, err := ParsePrefix(gotStr, m)
+				if got != want || err != nil {
+					t.Errorf("ParsePrefix(%q, %v):\ngot  (%v, %v)\nwant (%v, nil)", gotStr, m, got, err, want)
+				}
 			}
 		}
 	}
@@ -136,32 +145,26 @@ func testBoundary(t *testing.T, scales []float64, prefixes string, m Mode) {
 		for _, roundDir := range []float64{math.Inf(-1), math.Inf(+1)} {
 			for i, f := range scales {
 				want := math.Nextafter(sign*f, sign*roundDir)
-				str := FormatPrefix(want, m, -1)
-				got, err := ParsePrefix(str, m)
+				gotStr := FormatPrefix(want, m, -1)
+				got, err := ParsePrefix(gotStr, m)
 
 				// Check round-trip was close enough.
 				opt := cmpopts.EquateApprox(errFrac, 0)
 				if !cmp.Equal(got, want, opt) || err != nil {
-					t.Errorf("ParsePrefix(%s, %v):\ngot  (%v, %v)\nwant (%v, nil)", str, m, got, err, want)
+					t.Errorf("ParsePrefix(%q, %v):\ngot  (%v, %v)\nwant (%v, nil)", gotStr, m, got, err, want)
 				}
 
 				// Fraction must be either >= 1 or < base.
-				fraction, err := strconv.ParseFloat(strings.TrimRight(str, parsePrefixes+"i"), 64)
-				if err != nil {
-					t.Errorf("unexpected ParseFloat error: %v", err)
-				}
+				fraction := parseFraction(t, gotStr)
 				if roundDir < 0 && i == 0 {
 					fraction *= m.base()
 				}
-				if got, want := math.Signbit(fraction), math.Signbit(want); got != want {
-					t.Errorf("string %s: Signbit(fraction) = %v, want %v", str, got, want)
-				}
 				fraction = math.Abs(fraction)
 				if roundDir < 0 && !(m.base()-errFrac <= fraction && fraction < m.base()) {
-					t.Errorf("string %s: Abs(fraction) = %v, want (%v <= got < %v)", str, fraction, m.base()-errFrac, m.base())
+					t.Errorf("Abs(ParseFraction(%q)) = %v, want (%v <= got < %v)", gotStr, fraction, m.base()-errFrac, m.base())
 				}
 				if roundDir > 0 && !(1 <= fraction && fraction < 1+errFrac) {
-					t.Errorf("string %s: Abs(fraction) = %v, want (%v <= got < %v)", str, fraction, 1, 1+errFrac)
+					t.Errorf("Abs(ParseFraction(%q)) = %v, want (%v <= got < %v)", gotStr, fraction, 1, 1+errFrac)
 				}
 			}
 		}
@@ -182,38 +185,34 @@ func TestRoundtrip(t *testing.T) {
 func testRoundtrip(t *testing.T, m Mode, prec int) {
 	// Test for zero, NaN, -Inf, and +Inf.
 	for _, want := range []float64{-0.0, +0.0, math.NaN(), math.Inf(-1), math.Inf(+1)} {
-		str := FormatPrefix(want, m, prec)
-		if wantStr := strconv.FormatFloat(want, 'f', prec, 64); str != wantStr {
-			t.Errorf("FormatPrefix(%v, %v, %v):\ngot  %v\nwant %v", want, m, prec, str, wantStr)
+		gotStr := FormatPrefix(want, m, prec)
+		if wantStr := strconv.FormatFloat(want, 'f', prec, 64); gotStr != wantStr {
+			t.Errorf("FormatPrefix(%v, %v, %v):\ngot  %q\nwant %q", want, m, prec, gotStr, wantStr)
 		}
 
-		got, err := ParsePrefix(str, m)
+		got, err := ParsePrefix(gotStr, m)
 		if !cmp.Equal(got, want, cmpopts.EquateNaNs()) || err != nil {
-			t.Errorf("ParsePrefix(%v, %v):\ngot  (%v, %v)\n want (%v, nil)", str, m, got, err, want)
+			t.Errorf("ParsePrefix(%q, %v):\ngot  (%v, %v)\nwant (%v, nil)", gotStr, m, got, err, want)
 		}
 	}
 
 	// Test for a large range of values.
 	for i := -100; i <= +100; i++ {
 		want := 1.234567890123456 * math.Pow(10, float64(i))
-		str := FormatPrefix(want, m, prec)
-		got, err := ParsePrefix(str, m)
+		gotStr := FormatPrefix(want, m, prec)
+		got, err := ParsePrefix(gotStr, m)
 
 		// Ensure that we maintain decent precision.
 		opt := cmpopts.EquateApprox(1e-12, m.factorFloor(want)/2)
 		if !cmp.Equal(got, want, opt) || err != nil {
-			t.Errorf("ParsePrefix(%s, %v):\ngot  (%v, %v)\nwant (%v, nil)", str, m, got, err, want)
+			t.Errorf("ParsePrefix(%q, %v):\ngot  (%v, %v)\nwant (%v, nil)", gotStr, m, got, err, want)
 		}
 
 		// Ensure that we choose the best scale if possible.
 		if min, max := m.factorRanges(); min <= want && want <= max {
-			fraction, err := strconv.ParseFloat(strings.TrimRight(str, parsePrefixes+"i"), 64)
-			if err != nil {
-				t.Errorf("unexpected ParseFloat error: %v", err)
-			}
-			fraction = math.Abs(fraction)
+			fraction := parseFraction(t, gotStr)
 			if !(1.0 <= fraction && fraction < m.base()) {
-				t.Errorf("string %v: Abs(fraction) = %v, want (1.0 <= got < %v)", str, fraction, m.base())
+				t.Errorf("ParseFraction(%q) = %v, want (1.0 <= got < %v)", gotStr, fraction, m.base())
 			}
 		}
 	}
@@ -281,8 +280,7 @@ func TestParsePrefix(t *testing.T) {
 	for _, tt := range tests {
 		got, gotErr := ParsePrefix(tt.in, tt.mode)
 		if !cmp.Equal(got, tt.want, cmpopts.EquateNaNs()) || (gotErr == nil) != (tt.wantErr == nil) {
-			t.Errorf("ParsePrefix(%q, %d) = (%v, %v), want (%v, %v)",
-				tt.in, tt.mode, got, gotErr, tt.want, tt.wantErr)
+			t.Errorf("ParsePrefix(%q, %v):\ngot  (%v, %v)\nwant (%v, %v)", tt.in, tt.mode, got, gotErr, tt.want, tt.wantErr)
 		}
 	}
 }
