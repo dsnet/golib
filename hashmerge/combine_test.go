@@ -84,7 +84,7 @@ func TestCombineAdler32(t *testing.T) {
 			in1, in2 := shortString(g.in[:i]), shortString(g.in[i:])
 			len2 := int64(len(p2))
 			if got := CombineAdler32(adler32.Checksum(p1), adler32.Checksum(p2), len2); got != g.out {
-				t.Errorf("CombineAdler32(adler32.Checksum(%q), adler32.Checksum(%q), %d) = 0x%x want 0x%x",
+				t.Errorf("CombineAdler32(Checksum(%q), Checksum(%q), %d) = 0x%x, want 0x%x",
 					in1, in2, len2, got, g.out)
 			}
 		}
@@ -153,15 +153,15 @@ func TestCombineCRC32(t *testing.T) {
 			in1, in2 := g.in[:i], g.in[i:]
 			len2 := int64(len(p2))
 			if got := CombineCRC32(crc32.IEEE, ChecksumIEEE(p1), ChecksumIEEE(p2), len2); got != g.ieee {
-				t.Errorf("CombineCRC32(crc32.IEEE, ChecksumIEEE(%q), ChecksumIEEE(%q), %d) = 0x%x want 0x%x",
+				t.Errorf("CombineCRC32(IEEE, ChecksumIEEE(%q), ChecksumIEEE(%q), %d) = 0x%x, want 0x%x",
 					in1, in2, len2, got, g.ieee)
 			}
 			if got := CombineCRC32(crc32.Castagnoli, ChecksumCastagnoli(p1), ChecksumCastagnoli(p2), len2); got != g.castagnoli {
-				t.Errorf("CombineCRC32(crc32.Castagnoli, ChecksumCastagnoli(%q), ChecksumCastagnoli(%q), %d) = 0x%x want 0x%x",
+				t.Errorf("CombineCRC32(Castagnoli, ChecksumCastagnoli(%q), ChecksumCastagnoli(%q), %d) = 0x%x, want 0x%x",
 					in1, in2, len2, got, g.castagnoli)
 			}
 			if got := CombineCRC32(crc32.Koopman, ChecksumKoopman(p1), ChecksumKoopman(p2), len2); got != g.koopman {
-				t.Errorf("CombineCRC32(crc32.Koopman, ChecksumKoopman(%q), ChecksumKoopman(%q), %d) = 0x%x want 0x%x",
+				t.Errorf("CombineCRC32(Koopman, ChecksumKoopman(%q), ChecksumKoopman(%q), %d) = 0x%x, want 0x%x",
 					in1, in2, len2, got, g.koopman)
 			}
 		}
@@ -227,11 +227,11 @@ func TestCombineCRC64(t *testing.T) {
 			in1, in2 := g.in[:i], g.in[i:]
 			len2 := int64(len(p2))
 			if got := CombineCRC64(crc64.ISO, ChecksumISO(p1), ChecksumISO(p2), len2); got != g.iso {
-				t.Errorf("CombineCRC64(crc64.ISO, ChecksumISO(%q), ChecksumISO(%q), %d) = 0x%x want 0x%x",
+				t.Errorf("CombineCRC64(ISO, ChecksumISO(%q), ChecksumISO(%q), %d) = 0x%x, want 0x%x",
 					in1, in2, len2, got, g.iso)
 			}
 			if got := CombineCRC64(crc64.ECMA, ChecksumECMA(p1), ChecksumECMA(p2), len2); got != g.ecma {
-				t.Errorf("CombineCRC64(crc64.ECMA, ChecksumECMA(%q), ChecksumECMA(%q), %d) = 0x%x want 0x%x",
+				t.Errorf("CombineCRC64(ECMA, ChecksumECMA(%q), ChecksumECMA(%q), %d) = 0x%x, want 0x%x",
 					in1, in2, len2, got, g.ecma)
 			}
 		}
