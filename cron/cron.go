@@ -166,14 +166,8 @@ func (s Schedule) String() string {
 
 // A Cron holds a channel that delivers events based on the cron schedule.
 type Cron struct {
-	C  <-chan time.Time // The channel on which events are delivered
-	ch chan time.Time
+	C <-chan time.Time // The channel on which events are delivered
 
-	tz    *time.Location
-	sch   Schedule
-	timer *time.Timer
-
-	ctx    context.Context
 	cancel context.CancelFunc
 }
 
@@ -181,40 +175,41 @@ type Cron struct {
 // at every moment specified by the Schedule.
 // The timezone the cron job is operating in must be specified.
 // Stop Cron to release associated resources.
-func NewCron(s Schedule, tz *time.Location) *Cron {
+func NewCron(sch Schedule, tz *time.Location) *Cron {
 	if tz == nil {
 		panic("cron: unspecified time.Location; consider using time.Local")
 	}
 	ch := make(chan time.Time, 1)
-	c := &Cron{C: ch, ch: ch, tz: tz, sch: s, timer: time.NewTimer(0)}
-	c.ctx, c.cancel = context.WithCancel(context.Background())
-	<-c.timer.C
-	go c.monitor()
-	return c
-}
+	ctx, cancel := context.WithCancel(context.Background())
 
-func (c *Cron) monitor() {
-	for {
-		// Schedule the next firing.
-		now := time.Now().In(c.tz)
-		next := c.sch.NextAfter(now)
-		if next.IsZero() {
-			return
-		}
-		c.timer.Reset(next.Sub(now))
+	// Start monitor goroutine.
+	go func() {
+		timer := time.NewTimer(0)
+		<-timer.C
+		for {
+			// Schedule the next firing.
+			now := time.Now().In(tz)
+			next := sch.NextAfter(now)
+			if next.IsZero() {
+				return
+			}
+			timer.Reset(next.Sub(now))
 
-		// Wait until either stopped or triggered.
-		select {
-		case <-c.ctx.Done():
-			return
-		case t := <-c.timer.C:
-			// Best-effort at forwarding the signal.
+			// Wait until either stopped or triggered.
 			select {
-			case c.ch <- t:
-			default:
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			case t := <-timer.C:
+				// Best-effort at forwarding the signal.
+				select {
+				case ch <- t:
+				default:
+				}
 			}
 		}
-	}
+	}()
+	return &Cron{C: ch, cancel: cancel}
 }
 
 // Stop turns off the cron job. After Stop, no more events will be sent.
@@ -222,5 +217,4 @@ func (c *Cron) monitor() {
 // succeeding incorrectly.
 func (c *Cron) Stop() {
 	c.cancel()
-	c.timer.Stop()
 }
