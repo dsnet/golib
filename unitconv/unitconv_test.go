@@ -45,7 +45,7 @@ func (m Mode) factorFloor(v float64) float64 {
 	}
 }
 
-// factorRanges returns the mininum and maximum factors for that mode.
+// factorRanges returns the minimum and maximum factors for that mode.
 func (m Mode) factorRanges() (min, max float64) {
 	switch m {
 	case SI:
@@ -175,7 +175,7 @@ func testBoundary(t *testing.T, scales []float64, prefixes string, m Mode) {
 func TestRoundtrip(t *testing.T) {
 	for _, m := range []Mode{SI, Base1024, IEC} {
 		t.Run(m.String(), func(t *testing.T) {
-			for _, prec := range []int{-2, -1, 0, +1, +2} {
+			for _, prec := range []int{-1, 0, +1, +2} {
 				testRoundtrip(t, m, prec)
 			}
 		})
