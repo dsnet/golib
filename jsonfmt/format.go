@@ -34,12 +34,6 @@ func Standardize() Option {
 	return standardize{}
 }
 
-// EncodeStrings configures Format to encode string literals in a specific way.
-// By default, Format re-encodes string literals as UTF-8.
-func EncodeStrings() Option {
-	return nil
-}
-
 // Format parses and formats the input JSON according to provided Options.
 // If err is non-nil, then the output is a best effort at processing the input.
 //
@@ -47,10 +41,13 @@ func EncodeStrings() Option {
 // comments and trailing commas after the last element in an object or array.
 func Format(s []byte, opts ...Option) (out []byte, err error) {
 	if len(opts) != 1 {
-		return s, errors.New("jsonfmt: only Minify option is currently allowed")
+		return s, errors.New("jsonfmt: only Minify or Standardize option is currently allowed")
 	}
-	if _, ok := opts[0].(minify); !ok {
-		return s, errors.New("jsonfmt: only Minify option is currently allowed")
+	switch opts[0].(type) {
+	case minify:
+	case standardize:
+	default:
+		return s, errors.New("jsonfmt: only Minify or Standardize option is currently allowed")
 	}
 
 	m := minifier{in: s}
