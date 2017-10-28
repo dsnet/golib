@@ -2,183 +2,216 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE.md file.
 
-// Package jsonfmt provides helper functions related to JSON.
 package jsonfmt
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
-	"regexp"
+	"unicode"
 )
 
-// Option configures how to format JSON.
-type Option interface {
-	option()
-}
-
-type (
-	minify      struct{ Option }
-	standardize struct{ Option }
-)
-
-// Minify configures Format to produce the minimal representation of the input.
-// If Format returns no error, then the output is guaranteed to be valid JSON,
-func Minify() Option {
-	return minify{}
-}
-
-// Standardize configures Format to produce valid JSON according to ECMA-404.
-// This strips any comments and trailing commas.
-func Standardize() Option {
-	return standardize{}
-}
-
-// Format parses and formats the input JSON according to provided Options.
-// If err is non-nil, then the output is a best effort at processing the input.
-//
-// This function accepts a superset of the JSON specification that allows
-// comments and trailing commas after the last element in an object or array.
-func Format(s []byte, opts ...Option) (out []byte, err error) {
-	if len(opts) != 1 {
-		return s, errors.New("jsonfmt: only Minify or Standardize option is currently allowed")
-	}
-	switch opts[0].(type) {
-	case minify:
-	case standardize:
-	default:
-		return s, errors.New("jsonfmt: only Minify or Standardize option is currently allowed")
-	}
-
-	m := minifier{in: s}
-	defer m.errRecover(&out, &err)
-	m.parseIgnored()
-	m.parseValue()
-	m.parseIgnored()
-	if len(m.in) > 0 {
-		m.errPanic("unexpected trailing input")
-	}
-	return m.out, nil
-}
-
-type minifier struct {
-	in, out []byte
-}
-
-var (
-	stringRegex  = regexp.MustCompile(`^"(\\(["\\\/bfnrt]|u[a-fA-F0-9]{4})|[^"\\\x00-\x1f\x7f]+)*"`)
-	numberRegex  = regexp.MustCompile(`^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?`)
-	literalRegex = regexp.MustCompile(`^(true|false|null)`)
-
-	commentRegex = regexp.MustCompile(`^(/\*([^\n]|\n)*?\*/|//[^\n]*\n?)`)
-	spaceRegex   = regexp.MustCompile(`^[ \r\n\t]*`)
-)
-
-func (m *minifier) parseValue() {
-	if len(m.in) == 0 {
-		m.errPanic("unable to parse value")
-	}
-	switch m.in[0] {
-	case '{':
-		m.parseObject()
-	case '[':
-		m.parseArray()
-	case '"':
-		m.parseRegexp(stringRegex, "string")
-	case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-		m.parseRegexp(numberRegex, "number")
-	case 't', 'f', 'n':
-		m.parseRegexp(literalRegex, "literal")
-	default:
-		m.errPanic("unable to parse value")
-	}
-}
-
-func (m *minifier) parseObject() {
-	m.parseChar('{', "object")
-	for {
-		m.parseIgnored()
-		if len(m.in) > 0 && m.in[0] == '}' {
-			break
+func (s *state) format() (out []byte) {
+	defer func() {
+		if ex := recover(); ex != nil {
+			if js, ok := ex.(jsonInvalid); ok {
+				s.out = append(s.out, js...)
+			} else {
+				panic(ex)
+			}
 		}
-		m.parseRegexp(stringRegex, "string")
-		m.parseIgnored()
-		m.parseChar(':', "object")
-		m.parseIgnored()
-		m.parseValue()
-		m.parseIgnored()
-		if len(m.in) > 0 && m.in[0] == '}' {
-			break
+		out = bytes.TrimSpace(s.out)
+		if bytes.IndexByte(out, '\n') >= 0 {
+			out = append(out, '\n')
 		}
-		m.parseChar(',', "object")
-	}
-	m.out = append(bytes.TrimRight(m.out, ","), '}')
-	m.in = m.in[1:]
+	}()
+
+	s.out = nil
+	s.formatMeta(s.preVal)
+	s.formatValue(s.val)
+	s.formatMeta(s.postVal)
+	return
 }
 
-func (m *minifier) parseArray() {
-	m.parseChar('[', "array")
-	for {
-		m.parseIgnored()
-		if len(m.in) > 0 && m.in[0] == ']' {
-			break
+func (s *state) formatValue(js jsonValue) {
+	switch v := js.(type) {
+	case *jsonObject:
+		s.formatObject(v)
+	case *jsonArray:
+		s.formatArray(v)
+	case jsonString:
+		s.flushAppend(v...)
+	case jsonNumber:
+		s.flushAppend(v...)
+	case jsonLiteral:
+		s.flushAppend(v...)
+	case jsonInvalid:
+		panic(v)
+	}
+}
+
+func (s *state) formatObject(js *jsonObject) {
+	s.flushAppend('{')
+	indentOuter := hasNewlines(js.preRecords)
+	if indentOuter {
+		s.pushIndent()
+	}
+	s.formatMeta(js.preRecords)
+	for i, rec := range js.records {
+		s.formatMeta(rec.preKey)
+		s.formatValue(rec.key)
+		s.formatMeta(rec.postKey)
+		s.flushAppend(':')
+		indentInner := hasNewlines(rec.preVal)
+		if indentInner {
+			s.pushIndent()
 		}
-		m.parseValue()
-		m.parseIgnored()
-		if len(m.in) > 0 && m.in[0] == ']' {
-			break
+		s.formatMeta(rec.preVal)
+		s.formatValue(rec.val)
+		s.formatMeta(rec.postVal)
+		if i < len(js.records)-1 || s.emitTrailingComma(rec.postComma, js.postRecords) {
+			s.flushAppend(',')
 		}
-		m.parseChar(',', "array")
-	}
-	m.out = append(bytes.TrimRight(m.out, ","), ']')
-	m.in = m.in[1:]
-}
-
-func (m *minifier) parseIgnored() {
-	for {
-		n := len(commentRegex.Find(m.in)) + len(spaceRegex.Find(m.in))
-		if n == 0 {
-			return
+		if indentInner {
+			s.popIndent()
 		}
-		m.in = m.in[n:]
+		s.formatMeta(rec.postComma)
 	}
-}
-
-func (m *minifier) parseRegexp(r *regexp.Regexp, what string) {
-	n := len(r.Find(m.in))
-	if n == 0 {
-		m.errPanic("unable to parse %s", what)
+	s.formatMeta(js.postRecords)
+	if indentOuter {
+		s.popIndent()
 	}
-	m.out = append(m.out, m.in[:n]...)
-	m.in = m.in[n:]
+	s.flushAppend('}')
 }
 
-func (m *minifier) parseChar(c uint8, what string) {
-	if len(m.in) == 0 || m.in[0] != c {
-		m.errPanic("unable to parse %s", what)
+func (s *state) formatArray(js *jsonArray) {
+	s.flushAppend('[')
+	indentOuter := hasNewlines(js.preElems)
+	if indentOuter {
+		s.pushIndent()
 	}
-	m.out = append(m.out, m.in[0])
-	m.in = m.in[1:]
+	s.formatMeta(js.preElems)
+	for i, rec := range js.elems {
+		s.formatMeta(rec.preVal)
+		s.formatValue(rec.val)
+		s.formatMeta(rec.postVal)
+		if i < len(js.elems)-1 || s.emitTrailingComma(rec.postComma, js.postElems) {
+			s.flushAppend(',')
+		}
+		s.formatMeta(rec.postComma)
+	}
+	s.formatMeta(js.postElems)
+	if indentOuter {
+		s.popIndent()
+	}
+	s.flushAppend(']')
 }
 
-type stringError string
-
-func (es stringError) Error() string {
-	return "jsonfmt: " + string(es)
-}
-
-func (m *minifier) errPanic(f string, x ...interface{}) {
-	m.out = append(m.out, m.in...)
-	panic(stringError(fmt.Sprintf(f, x...)))
-}
-
-func (m *minifier) errRecover(out *[]byte, err *error) {
-	if ex := recover(); ex != nil {
-		if es, ok := ex.(stringError); ok {
-			*err = es
-			*out = m.out
-		} else {
-			panic(ex)
+func (s *state) formatMeta(js jsonMeta) {
+	for _, m := range js {
+		switch m := m.(type) {
+		case jsonComment:
+			s.flushSpaces('/')
+			s.formatComment(m)
+		case jsonNewlines:
+			for i := 0; i < int(m); i++ {
+				s.newlines = append(s.newlines, '\n')
+			}
+		case jsonInvalid:
+			panic(m)
 		}
 	}
+}
+
+func (s *state) formatComment(js jsonComment) {
+	if s.standardize {
+		return // Comments are not valid in ECMA-404
+	}
+	bs := bytes.Split(js, newlineBytes)
+	prefix := indentPrefix(bs[len(bs)-1])
+	allStars := len(bs) > 1
+	for i, b := range bs {
+		bs[i] = bytes.TrimRightFunc(bytes.TrimPrefix(b, prefix), unicode.IsSpace)
+		if i > 0 {
+			allStars = allStars && len(bs[i]) > 0 && bs[i][0] == '*'
+		}
+	}
+	if allStars { // Line up stars in block comments
+		for i, b := range bs {
+			if i > 0 {
+				bs[i] = append(spaceBytes, b...)
+			}
+		}
+	}
+	js = bytes.Join(bs, append(newlineBytes, s.indents...))
+	s.out = append(s.out, js...)
+}
+
+// flushAppend calls flushSpaces before appending b to the output.
+func (s *state) flushAppend(b ...byte) {
+	s.flushSpaces(b[0])
+	s.out = append(s.out, b...)
+}
+
+// flushSpaces determines how many spaces and newlines to output using
+// information from the previous and next non-whitespace characters.
+func (s *state) flushSpaces(next byte) {
+	if s.minify {
+		return
+	}
+	var prev byte
+	if len(s.out) > 0 {
+		prev = s.out[len(s.out)-1]
+	}
+	if len(s.newlines) > 2 {
+		s.newlines = s.newlines[:2] // Avoid more than 1 empty line
+	}
+	if len(s.newlines) > 1 && (prev == '{' || prev == '[' || next == '}' || next == ']') {
+		s.newlines = s.newlines[:1] // Avoid empty lines after open brace or before closing brace
+	}
+	if len(s.newlines) > 1 && prev == ':' {
+		s.newlines = s.newlines[:1] // Avoid empty lines after lines ending with colon
+	}
+	if next == ':' {
+		s.newlines = s.newlines[:0] // Avoid starting lines with a colon
+	}
+	if (prev == '{' && next == '}') || (prev == '[' && next == ']') {
+		s.newlines = s.newlines[:0] // Always collapse empty objects and arrays
+	}
+	if len(s.newlines) > 0 {
+		s.out = append(s.out, s.newlines...)
+		s.out = append(s.out, s.indents...)
+		s.newlines = s.newlines[:0]
+	} else if prev == ':' || prev == ',' || prev == '/' || next == '/' {
+		s.out = append(s.out, ' ')
+	}
+}
+
+// emitTrailingComma reports whether a trailing comma should be emitted.
+// Only emit trailing commas if the source had trailing commas,
+// and there is at least one newline until the closing brace.
+func (s *state) emitTrailingComma(postComma, postVals jsonMeta) bool {
+	if s.trailingComma && !s.standardize {
+		return hasNewlines(postComma) || hasNewlines(postVals)
+	}
+	return false
+}
+
+func hasNewlines(js jsonMeta) bool {
+	for _, m := range js {
+		switch m := m.(type) {
+		case jsonComment:
+			if bytes.IndexByte(m, '\n') > 0 {
+				return true
+			}
+		case jsonNewlines:
+			if m > 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func indentPrefix(s []byte) []byte {
+	n := len(s) - len(bytes.TrimLeft(s, " \t"))
+	return s[:n]
 }
