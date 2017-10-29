@@ -170,8 +170,8 @@ func (s *state) flushSpaces(next byte) {
 	if len(s.newlines) > 1 && prev == ':' {
 		s.newlines = s.newlines[:1] // Avoid empty lines after lines ending with colon
 	}
-	if next == ':' {
-		s.newlines = s.newlines[:0] // Avoid starting lines with a colon
+	if next == ':' || next == ',' {
+		s.newlines = s.newlines[:0] // Avoid starting lines with a colon or comma
 	}
 	if (prev == '{' && next == '}') || (prev == '[' && next == ']') {
 		s.newlines = s.newlines[:0] // Always collapse empty objects and arrays

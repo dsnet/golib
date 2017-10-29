@@ -225,6 +225,40 @@ func TestFormat(t *testing.T) {
 		out:  "[123456789,123456789,123456789]",
 		opts: []Option{Minify()},
 	}, {
+		in: `{
+			/* comment */
+			"key"
+			/* comment */
+			:
+			/* comment */
+			"record"
+			/* comment */
+			,
+			/* comment */
+			"key"
+			/* comment */
+			:
+			/* comment */
+			"record"
+			/* comment */
+			,
+		}`,
+		out: `
+			{
+				/* comment */
+				"key"
+				/* comment */ :
+					/* comment */
+					"record"
+					/* comment */ ,
+				/* comment */
+				"key"
+				/* comment */ :
+					/* comment */
+					"record"
+					/* comment */ ,
+			}`,
+	}, {
 		in: `
 
 					/*
