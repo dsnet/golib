@@ -34,22 +34,22 @@ func TestFormat(t *testing.T) {
 		out: `
 			{
 				"firstName": "John",
-				"lastName": "Smith",
-				"isAlive": true,
-				"age": 25,
+				"lastName":  "Smith",
+				"isAlive":   true,
+				"age":       25,
 				"address": {
 					"streetAddress": "21 2nd Street",
-					"city": "New York",
-					"state": "NY",
-					"postalCode": "10021-3100"
+					"city":          "New York",
+					"state":         "NY",
+					"postalCode":    "10021-3100"
 				},
 				"phoneNumbers": [
-					{"type": "home", "number": "212 555-1234"},
+					{"type": "home",   "number": "212 555-1234"},
 					{"type": "office", "number": "646 555-4567"},
 					{"type": "mobile", "number": "123 456-7890"}
 				],
 				"children": [],
-				"spouse": null
+				"spouse":   null
 			}`,
 	}, {
 		in: `[[{"0123456789": "0123456789"}, {"0123456789": "0123456789"}], [{"0123456789": "0123456789"}, {"0123456789": "0123456789"}], [{"0123456789": "0123456789"}, {"0123456789": "0123456789"}]]`,
@@ -109,32 +109,32 @@ func TestFormat(t *testing.T) {
 					"PasswordHash": "",
 					"SMTP": {
 						"RelayServer": "mail.example.com:587",
-						"Password": "abcdefghijklmnopqrstuvwxyz",
-						"From": "noreply@example.com",
-						"To": "noreply@example.com",
+						"Password":    "abcdefghijklmnopqrstuvwxyz",
+						"From":        "noreply@example.com",
+						"To":          "noreply@example.com",
 					},
 				},
 
 				// SSH comment.
 				"SSH": {
-					"KeyFiles": ["key.priv"], // SSH key file
-					"KnownHostFiles": [], // SSH known hosts file
+					"KeyFiles":       ["key.priv"], // SSH key file
+					"KnownHostFiles": [],           // SSH known hosts file
 				},
 
-				"RateLimit": "10Mi",
+				"RateLimit":    "10Mi",
 				"AutoSnapshot": {"Cron": "* * * * *", "Count": 3, "TimeZone": "Local"},
-				"SendFlags": ["-w"],
-				"RecvFlags": ["-s"],
+				"SendFlags":    ["-w"],
+				"RecvFlags":    ["-s"],
 				"Datasets": [{
 					"AutoSnapshot": {"Cron": "0 6 * * *", "TimeZone": "Local", "Count": 30},
-					"Source": "//example.com/tank/fizz",
-					"Mirrors": ["//foo.example.com/tank/replicas/fizz-drive"],
+					"Source":       "//example.com/tank/fizz",
+					"Mirrors":      ["//foo.example.com/tank/replicas/fizz-drive"],
 				}, {
-					"Source": "//example.com/tank/buzz",
+					"Source":  "//example.com/tank/buzz",
 					"Mirrors": ["//foo.example.com/tank/replicas/buzz-drive"],
 				}, {
 					// Seperate dataset so it has its own readonly setting
-					"Source": "//example.com/tank/users",
+					"Source":  "//example.com/tank/users",
 					"Mirrors": ["//foo.example.com/tank/replicas/users"],
 				}],
 			}`,
@@ -181,25 +181,25 @@ func TestFormat(t *testing.T) {
 					"PasswordHash": "",
 					"SMTP": {
 						"RelayServer": "mail.example.com:587",
-						"Password": "abcdefghijklmnopqrstuvwxyz",
-						"From": "noreply@example.com",
-						"To": "noreply@example.com"
+						"Password":    "abcdefghijklmnopqrstuvwxyz",
+						"From":        "noreply@example.com",
+						"To":          "noreply@example.com"
 					}
 				},
-				"SSH": {"KeyFiles": ["key.priv"], "KnownHostFiles": []},
-				"RateLimit": "10Mi",
+				"SSH":          {"KeyFiles": ["key.priv"], "KnownHostFiles": []},
+				"RateLimit":    "10Mi",
 				"AutoSnapshot": {"Cron": "* * * * *", "Count": 3, "TimeZone": "Local"},
-				"SendFlags": ["-w"],
-				"RecvFlags": ["-s"],
+				"SendFlags":    ["-w"],
+				"RecvFlags":    ["-s"],
 				"Datasets": [{
 					"AutoSnapshot": {"Cron": "0 6 * * *", "TimeZone": "Local", "Count": 30},
-					"Source": "//example.com/tank/fizz",
-					"Mirrors": ["//foo.example.com/tank/replicas/fizz-drive"]
+					"Source":       "//example.com/tank/fizz",
+					"Mirrors":      ["//foo.example.com/tank/replicas/fizz-drive"]
 				}, {
-					"Source": "//example.com/tank/buzz",
+					"Source":  "//example.com/tank/buzz",
 					"Mirrors": ["//foo.example.com/tank/replicas/buzz-drive"]
 				}, {
-					"Source": "//example.com/tank/users",
+					"Source":  "//example.com/tank/users",
 					"Mirrors": ["//foo.example.com/tank/replicas/users"]
 				}]
 			}`,
@@ -273,49 +273,49 @@ func TestFormat(t *testing.T) {
 			"Text"`,
 	}, {
 		in: `
-				[
-									{
-										"fwafwa" /*ffawe*/:
-								    		"fewafwaf",
+			[
+								{
+									"fwafwa" /*ffawe*/:
+							    		"fewafwaf",
 
-						"fwafwafwae":
-
-
+					"fwafwafwae":
 
 
-					                 		"fwafewa",},
 
-				[/*comment*/
-				{/*comment*/},
+
+				                 		"fwafewa",},
+
+			[/*comment*/
+			{/*comment*/},
+				{
+
+				}
+
+
+
+
+				],
+
+					{"fwafwa":
+
+
+
+							    		"fewafwaf",
+					"fwafwafwae": "dwafewa",//fea
+					"fwafwafwae"://fa
+					"fwafewa",},
+
 					{
-
-					}
-
-
+						"fwafwa": 0.0000000000000000000033242000000,
+					"fwafwafwae"
 
 
-					],
-
-						{"fwafwa":
-
-
-
-								    		"fewafwaf",
-						"fwafwafwae": "dwafewa",//fea
-						"fwafwafwae"://fa
-						"fwafewa",},
-
-						{
-							"fwafwa": 0.0000000000000000000033242000000,
-						"fwafwafwae"
-
-
-						:				"fwafewa",
-						 },
-						 ["fweafewa","faewfaew","afwefawe"/*
-						 fewfaew
-						 fewafewa*/]
-				 				    ]`,
+					:				"fwafewa",
+					 },
+					 ["fweafewa","faewfaew","afwefawe"/*
+					 fewfaew
+					 fewafewa*/]
+			 				    ]`,
 		out: `
 			[
 				{
@@ -335,30 +335,76 @@ func TestFormat(t *testing.T) {
 					"fwafwa":
 						"fewafwaf",
 					"fwafwafwae": "dwafewa", //fea
-					"fwafwafwae": //fa
+					"fwafwafwae":            //fa
 						"fwafewa",
 				},
 
 				{
-					"fwafwa": 3.3242e-21,
+					"fwafwa":     3.3242e-21,
 					"fwafwafwae": "fwafewa",
 				},
 				["fweafewa", "faewfaew", "afwefawe", /*
 				fewfaew
 				fewafewa*/ ],
 			]`,
+	}, {
+		in: `
+			[
+				{"keyX": [1,2,3,4,5]},
+				{"keyXX": [1,2,3], "keyZ": {"subkey": "value"},},
+				{"keyY": "val", "keyZZ": [[[[[[[1,2,3]]]]]]]},
+			]`,
+		out: `
+			[
+				{"keyX":  [1, 2, 3, 4, 5]},
+				{"keyXX": [1, 2, 3], "keyZ":  {"subkey": "value"}},
+				{"keyY":  "val",     "keyZZ": [[[[[[[1, 2, 3]]]]]]]},
+			]`,
+	}, {
+		in: `
+			{
+				"key": "val01234567", // Comment 1
+				"key01234567890123456789": "val0123456789", // Comment 2
+				"key": "val", // Comment 3
+				"key0123456789": "val0123", // Comment 4
+			}`,
+		out: `
+			{
+				"key":                     "val01234567",   // Comment 1
+				"key01234567890123456789": "val0123456789", // Comment 2
+				"key":                     "val",           // Comment 3
+				"key0123456789":           "val0123",       // Comment 4
+			}`,
+	}, {
+		in: `
+			{
+				"key012345678901234567890": "val0123456789", // Comment 2
+				"key": "val01234567", // Comment 1
+				"key": "val", // Comment 3
+				"key0123456789": "val0123", // Comment 4
+			}`,
+		out: `
+			{
+				"key012345678901234567890": "val0123456789", // Comment 2
+				"key":           "val01234567",              // Comment 1
+				"key":           "val",     // Comment 3
+				"key0123456789": "val0123", // Comment 4
+			}`,
+	}, {
+		in:  `/**//**/{/**//**/"key"/**//**/:/**//**/"val"/**//**/}/**//**/`,
+		out: `/**/ /**/ { /**/ /**/ "key" /**/ /**/ : /**/ /**/ "val" /**/ /**/ } /**/ /**/`,
 	}}
 
 	for i, tt := range tests {
 		// Adjust output for leading tabs and newlines.
-		out := strings.Join(strings.Split(tt.out, "\n\t\t\t"), "\n")
-		if strings.HasPrefix(out, "\n") {
-			out = out[1:] + "\n"
+		want := strings.Join(strings.Split(tt.out, "\n\t\t\t"), "\n")
+		if strings.HasPrefix(want, "\n") {
+			want = want[1:] + "\n"
 		}
 
 		got, err := Format([]byte(tt.in), tt.opts...)
-		if string(got) != out || err != tt.err {
-			t.Errorf("test %d, Format(`%s`):\ngot  (`%s`, %v)\nwant (`%s`, %v)", i, tt.in, got, err, out, tt.err)
+		if string(got) != want || err != tt.err {
+			t.Errorf("test %d, Format(`%s`):\ngot  (`%s`, %v)\nwant (`%s`, %v)", i, tt.in, got, err, want, tt.err)
 		}
 	}
 }

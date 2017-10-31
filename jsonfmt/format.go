@@ -13,15 +13,15 @@ func (s *state) format() (out []byte) {
 	defer func() {
 		if ex := recover(); ex != nil {
 			if js, ok := ex.(jsonInvalid); ok {
-				s.out = append(s.out, js...)
+				s.flushAppend(js...)
 			} else {
 				panic(ex)
 			}
 		}
-		out = bytes.TrimSpace(s.out)
-		if bytes.IndexByte(out, '\n') >= 0 {
-			out = append(out, '\n')
+		if s.hasNewlines {
+			s.out = append(s.out, '\n')
 		}
+		out = s.out
 	}()
 
 	s.out = nil
@@ -142,13 +142,16 @@ func (s *state) formatComment(js jsonComment) {
 		}
 	}
 	js = bytes.Join(bs, append(newlineBytes, s.indents...))
+	s.hasNewlines = s.hasNewlines || len(bs) > 1
 	s.out = append(s.out, js...)
 }
 
 // flushAppend calls flushSpaces before appending b to the output.
 func (s *state) flushAppend(b ...byte) {
-	s.flushSpaces(b[0])
-	s.out = append(s.out, b...)
+	if len(b) > 0 {
+		s.flushSpaces(b[0])
+		s.out = append(s.out, b...)
+	}
 }
 
 // flushSpaces determines how many spaces and newlines to output using
@@ -160,6 +163,8 @@ func (s *state) flushSpaces(next byte) {
 	var prev byte
 	if len(s.out) > 0 {
 		prev = s.out[len(s.out)-1]
+	} else {
+		s.newlines = s.newlines[:0] // Avoid leading empty lines
 	}
 	if len(s.newlines) > 2 {
 		s.newlines = s.newlines[:2] // Avoid more than 1 empty line
@@ -177,10 +182,11 @@ func (s *state) flushSpaces(next byte) {
 		s.newlines = s.newlines[:0] // Always collapse empty objects and arrays
 	}
 	if len(s.newlines) > 0 {
+		s.hasNewlines = true
 		s.out = append(s.out, s.newlines...)
 		s.out = append(s.out, s.indents...)
 		s.newlines = s.newlines[:0]
-	} else if prev == ':' || prev == ',' || prev == '/' || next == '/' {
+	} else if prev > 0 && (prev == ':' || prev == ',' || prev == '/' || next == '/') {
 		s.out = append(s.out, ' ')
 	}
 }

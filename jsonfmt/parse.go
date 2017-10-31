@@ -14,12 +14,19 @@ import (
 )
 
 var (
-	stringRegex  = regexp.MustCompile(`^"(\\(["\\\/bfnrt]|u[a-fA-F0-9]{4})|[^"\\\x00-\x1f\x7f]+)*"`)
-	numberRegex  = regexp.MustCompile(`^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?`)
-	literalRegex = regexp.MustCompile(`^(true|false|null)`)
+	stringRx  = `"(\\(["\\\/bfnrt]|u[a-fA-F0-9]{4})|[^"\\\x00-\x1f\x7f]+)*"`
+	numberRx  = `-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?`
+	literalRx = `(true|false|null)`
 
-	commentRegex = regexp.MustCompile(`^(/\*([^\n]|\n)*?\*/|//[^\n]*\n?)`)
-	spaceRegex   = regexp.MustCompile(`^[ \r\n\t]*`)
+	commentRx = `(/\*([^\n]|\n)*?\*/|//[^\n]*\n?)`
+	spaceRx   = `[ \r\n\t]*`
+
+	stringRegex  = regexp.MustCompile("^" + stringRx)
+	numberRegex  = regexp.MustCompile("^" + numberRx)
+	literalRegex = regexp.MustCompile("^" + literalRx)
+
+	commentRegex = regexp.MustCompile("^" + commentRx)
+	spaceRegex   = regexp.MustCompile("^" + spaceRx)
 )
 
 func (s *state) parse(in []byte) (err error) {

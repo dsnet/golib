@@ -50,7 +50,7 @@ func exploreAST(js jsonValue, m map[int][]jsonValue, depth int) (maxDepth int) {
 	return maxDepth
 }
 
-// tryExpandObject determines whether expand the jsonObject, and expands if so.
+// tryExpandObject determines whether to expand jsonObject, and expands if so.
 func tryExpandObject(js *jsonObject, columnLimit int) {
 	for i := range js.records {
 		prevLen, multi1 := lineLength(-1, js.records[:i])
@@ -71,7 +71,7 @@ func expandObject(js *jsonObject) {
 	js.postRecords = appendNewline(js.postRecords)
 }
 
-// tryExpandArray determines whether expand the jsonArray, and expands if so.
+// tryExpandArray determines whether to expand jsonArray, and expands if so.
 func tryExpandArray(js *jsonArray, columnLimit int) {
 	for i := range js.elems {
 		prevLen, _ := lineLength(-1, js.elems[:i])
@@ -133,6 +133,8 @@ func lineLength(dir int, vs ...interface{}) (n int, multi bool) {
 			return 0, v > 0
 		case token:
 			return 1, false
+		case nil:
+			return 0, false
 		default:
 			panic(fmt.Sprintf("unable to handle type %T", v))
 		}

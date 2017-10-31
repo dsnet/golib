@@ -87,8 +87,9 @@ type (
 	standardize struct{ Option }
 )
 
-// TODO: Make this an user Option?
+// TODO: Make these an user Option?
 const defaultColumnLimit = 80
+const defaultAlignLimit = 20
 
 // Minify configures Format to produce the minimal representation of the input.
 // If Format returns no error, then the output is guaranteed to be valid JSON,
@@ -125,7 +126,7 @@ func Format(in []byte, opts ...Option) (out []byte, err error) {
 	}
 	out = st.format()
 	if !st.minify {
-		// TODO: Vertically align values and comments in output.
+		out = alignJSON(out, defaultAlignLimit)
 	}
 	return out, err
 }
@@ -142,8 +143,9 @@ type state struct {
 	minify        bool // If set, implies standardize is set too
 	standardize   bool // If set, output will be ECMA-404 compliant
 	trailingComma bool // Set by parser if any trailing commas detected
+	hasNewlines   bool // Set by formatter if any newlines are emitted
 
-	newlines []byte // Newlines to output
+	newlines []byte // Pending newlines to output
 	indents  []byte // Indents to output per line
 }
 
