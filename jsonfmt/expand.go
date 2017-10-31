@@ -11,16 +11,16 @@ import (
 )
 
 // expandAST walks js and inserts newlines into jsonObject and jsonArray nodes
-// if the non-whitespace of any line exceeds the column limit.
-func expandAST(js jsonValue, columnLimit int) {
+// if the line (excluding indentation) exceeds the column limit.
+func expandAST(js jsonValue, limit int) {
 	m := make(map[int][]jsonValue)
 	for d := exploreAST(js, m, 0); d >= 0; d-- {
 		for _, js := range m[d] {
 			switch js := js.(type) {
 			case *jsonObject:
-				tryExpandObject(js, columnLimit)
+				tryExpandObject(js, limit)
 			case *jsonArray:
-				tryExpandArray(js, columnLimit)
+				tryExpandArray(js, limit)
 			}
 		}
 	}
@@ -51,12 +51,12 @@ func exploreAST(js jsonValue, m map[int][]jsonValue, depth int) (maxDepth int) {
 }
 
 // tryExpandObject determines whether to expand jsonObject, and expands if so.
-func tryExpandObject(js *jsonObject, columnLimit int) {
+func tryExpandObject(js *jsonObject, limit int) {
 	for i := range js.records {
 		prevLen, multi1 := lineLength(-1, js.records[:i])
 		nextLen, multi2 := lineLength(+1, js.records[i:])
 		expandMulti := len(js.records) > 1 && (multi1 || multi2)
-		if prevLen+nextLen > columnLimit || expandMulti {
+		if prevLen+nextLen > limit || expandMulti {
 			expandObject(js)
 			return
 		}
@@ -64,31 +64,57 @@ func tryExpandObject(js *jsonObject, columnLimit int) {
 }
 func expandObject(js *jsonObject) {
 	js.preRecords = appendNewline(js.preRecords)
-	for i, rec := range js.records {
-		rec.postComma = appendNewline(rec.postComma)
-		js.records[i] = rec
+	for i := range js.records {
+		js.records[i].postComma = appendNewline(js.records[i].postComma)
 	}
-	js.postRecords = appendNewline(js.postRecords)
 }
 
 // tryExpandArray determines whether to expand jsonArray, and expands if so.
-func tryExpandArray(js *jsonArray, columnLimit int) {
+func tryExpandArray(js *jsonArray, limit int) {
+	// Primitive arrays only contains strings, numbers, and literals
+	// without any comments in between.
+	isPrimitive := len(js.preElems)+len(js.postElems) == 0
+	for _, e := range js.elems {
+		isPrimitive = isPrimitive && len(e.preVal)+len(e.postVal)+len(e.postComma) == 0
+		switch e.val.(type) {
+		case jsonString, jsonNumber, jsonLiteral:
+		default:
+			isPrimitive = false
+		}
+	}
+
 	for i := range js.elems {
 		prevLen, _ := lineLength(-1, js.elems[:i])
 		nextLen, _ := lineLength(+1, js.elems[i:])
-		if prevLen+nextLen > columnLimit {
+		if prevLen+nextLen > limit {
+			if isPrimitive {
+				expandPrimitiveArray(js, limit)
+				return
+			}
 			expandArray(js)
 			return
 		}
 	}
 }
+func expandPrimitiveArray(js *jsonArray, limit int) {
+	js.preElems = appendNewline(js.preElems)
+	var lineLen int
+	for i, elem := range js.elems {
+		n, _ := lineLength(+1, elem.val, ',')
+		lineLen += n
+		if lineLen > limit || i == len(js.elems)-1 {
+			elem.postComma = appendNewline(elem.postComma)
+			js.elems[i] = elem
+			lineLen = 0
+			continue
+		}
+	}
+}
 func expandArray(js *jsonArray) {
 	js.preElems = appendNewline(js.preElems)
-	for i, elem := range js.elems {
-		elem.postComma = appendNewline(elem.postComma)
-		js.elems[i] = elem
+	for i := range js.elems {
+		js.elems[i].postComma = appendNewline(js.elems[i].postComma)
 	}
-	js.postElems = appendNewline(js.postElems)
 }
 
 // lineLength reports the upcoming line length in the sequence of AST nodes.
@@ -96,17 +122,16 @@ func expandArray(js *jsonArray) {
 // The direction dir may only be +1 or -1 to control walking in a forward or
 // reverse direction.
 func lineLength(dir int, vs ...interface{}) (n int, multi bool) {
-	type token byte
 	length := func(v interface{}) (int, bool) {
 		switch v := v.(type) {
 		case *jsonObject:
-			return lineLength(dir, token('{'), v.preRecords, v.records, v.postRecords, token('}'))
+			return lineLength(dir, '{', v.preRecords, v.records, v.postRecords, '}')
 		case *jsonArray:
-			return lineLength(dir, token('['), v.preElems, v.elems, v.postElems, token(']'))
+			return lineLength(dir, '[', v.preElems, v.elems, v.postElems, ']')
 		case jsonRecord:
-			return lineLength(dir, v.preKey, v.key, v.postKey, token(':'), v.preVal, v.val, v.postVal, token(','), v.postComma)
+			return lineLength(dir, v.preKey, v.key, v.postKey, ':', v.preVal, v.val, v.postVal, ',', v.postComma)
 		case jsonElement:
-			return lineLength(dir, v.preVal, v.val, v.postVal, token(','), v.postComma)
+			return lineLength(dir, v.preVal, v.val, v.postVal, ',', v.postComma)
 		case []jsonRecord, []jsonElement, jsonMeta:
 			var args []interface{}
 			vv := reflect.ValueOf(v)
@@ -117,21 +142,26 @@ func lineLength(dir int, vs ...interface{}) (n int, multi bool) {
 		case jsonString, jsonNumber, jsonLiteral:
 			return reflect.ValueOf(v).Len(), false
 		case jsonComment, jsonInvalid:
+			// Add 1 to the returned result to account for preceding space.
+			// This accounting is one too few for first block comment.
 			b := reflect.ValueOf(v).Bytes()
 			switch dir {
 			case +1:
 				if i := bytes.IndexByte(b, '\n'); i >= 0 {
-					return i, true
+					return 1 + i, true
 				}
 			case -1:
 				if i := bytes.LastIndexByte(b, '\n'); i >= 0 {
-					return len(b) - (i + 1), true
+					return 1 + len(b) - (i + 1), true
 				}
 			}
-			return len(b), false
+			return 1 + len(b), false
 		case jsonNewlines:
 			return 0, v > 0
-		case token:
+		case rune:
+			if v == ':' || v == ',' {
+				return 2, false // Implicit space added
+			}
 			return 1, false
 		case nil:
 			return 0, false
