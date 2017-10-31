@@ -21,9 +21,9 @@ type File struct {
 	i int
 }
 
-// NewFile creates and initializes a new File using b as its initial contents.
+// New creates and initializes a new File using b as its initial contents.
 // The new File takes ownership of b.
-func NewFile(b []byte) *File {
+func New(b []byte) *File {
 	return &File{b: b}
 }
 
