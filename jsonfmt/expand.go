@@ -52,69 +52,83 @@ func exploreAST(js jsonValue, m map[int][]jsonValue, depth int) (maxDepth int) {
 
 // tryExpandObject determines whether to expand jsonObject, and expands if so.
 func tryExpandObject(js *jsonObject, limit int) {
+	if len(js.records) == 0 {
+		return
+	}
+
+	// Only allow batching if newlines already exist in record meta nodes
+	// and at least one record entirely lacks newlines.
+	_, mayBatch := lineLength(+1, js.preRecords)
+	hasBatch := false
+	for _, rec := range js.records {
+		_, multi := lineLength(+1, rec.postKey, rec.preVal, rec.postVal, rec.postComma)
+		mayBatch = mayBatch || multi
+		hasBatch = hasBatch || !multi
+	}
+	batch := mayBatch && hasBatch
+
 	for i := range js.records {
 		prevLen, multi1 := lineLength(-1, js.records[:i])
 		nextLen, multi2 := lineLength(+1, js.records[i:])
-		expandMulti := len(js.records) > 1 && (multi1 || multi2)
+		expandMulti := !batch && len(js.records) > 1 && (multi1 || multi2)
 		if prevLen+nextLen > limit || expandMulti {
-			expandObject(js)
+			expandObject(js, batch, limit)
 			return
 		}
 	}
 }
-func expandObject(js *jsonObject) {
+func expandObject(js *jsonObject, batch bool, limit int) {
+	n := len(js.records)
 	js.preRecords = appendNewline(js.preRecords)
-	for i := range js.records {
-		js.records[i].postComma = appendNewline(js.records[i].postComma)
+	for i := 1; i < n; i++ {
+		prevLen, _ := lineLength(-1, js.records[:i])
+		nextLen, _ := lineLength(+1, js.records[i:][:1])
+		if !batch || prevLen+nextLen > limit {
+			js.records[i-1].postComma = appendNewline(js.records[i-1].postComma)
+		}
 	}
+	js.records[n-1].postComma = appendNewline(js.records[n-1].postComma)
 }
 
 // tryExpandArray determines whether to expand jsonArray, and expands if so.
 func tryExpandArray(js *jsonArray, limit int) {
-	// Primitive arrays only contains strings, numbers, and literals
-	// without any comments in between.
-	isPrimitive := len(js.preElems)+len(js.postElems) == 0
-	for _, e := range js.elems {
-		isPrimitive = isPrimitive && len(e.preVal)+len(e.postVal)+len(e.postComma) == 0
-		switch e.val.(type) {
-		case jsonString, jsonNumber, jsonLiteral:
-		default:
-			isPrimitive = false
-		}
+	if len(js.elems) == 0 {
+		return
 	}
+
+	// Only allow batching if newlines already exist in element meta nodes
+	// and at least one element entirely lacks newlines.
+	_, mayBatch := lineLength(+1, js.preElems)
+	hasBatch := false
+	for _, elem := range js.elems {
+		_, multi := lineLength(+1, elem.postVal, elem.postComma)
+		mayBatch = mayBatch || multi
+		hasBatch = hasBatch || !multi
+	}
+	batch := mayBatch && hasBatch
 
 	for i := range js.elems {
 		prevLen, _ := lineLength(-1, js.elems[:i])
 		nextLen, _ := lineLength(+1, js.elems[i:])
 		if prevLen+nextLen > limit {
-			if isPrimitive {
-				expandPrimitiveArray(js, limit)
-				return
-			}
-			expandArray(js)
+			expandArray(js, batch, limit)
 			return
 		}
 	}
 }
-func expandPrimitiveArray(js *jsonArray, limit int) {
+func expandArray(js *jsonArray, batch bool, limit int) {
+	n := len(js.elems)
 	js.preElems = appendNewline(js.preElems)
-	var lineLen int
-	for i, elem := range js.elems {
-		n, _ := lineLength(+1, elem.val, ',')
-		lineLen += n
-		if lineLen > limit || i == len(js.elems)-1 {
-			elem.postComma = appendNewline(elem.postComma)
-			js.elems[i] = elem
-			lineLen = 0
-			continue
+	for i := 1; i < n; i++ {
+		// Always batch primitive values together.
+		isPrim := isPrimitive(js.elems[i-1].val) && isPrimitive(js.elems[i].val)
+		prevLen, _ := lineLength(-1, js.elems[:i])
+		nextLen, _ := lineLength(-1, js.elems[i:][:1])
+		if !(batch || isPrim) || (prevLen+nextLen) > limit {
+			js.elems[i-1].postComma = appendNewline(js.elems[i-1].postComma)
 		}
 	}
-}
-func expandArray(js *jsonArray) {
-	js.preElems = appendNewline(js.preElems)
-	for i := range js.elems {
-		js.elems[i].postComma = appendNewline(js.elems[i].postComma)
-	}
+	js.elems[n-1].postComma = appendNewline(js.elems[n-1].postComma)
 }
 
 // lineLength reports the upcoming line length in the sequence of AST nodes.
@@ -195,4 +209,13 @@ func appendNewline(js jsonMeta) jsonMeta {
 		}
 	}
 	return append(js, jsonNewlines(1))
+}
+
+func isPrimitive(js jsonValue) bool {
+	switch js.(type) {
+	case jsonNumber, jsonString, jsonLiteral:
+		return true
+	default:
+		return false
+	}
 }
