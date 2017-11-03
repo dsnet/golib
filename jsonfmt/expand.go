@@ -123,7 +123,7 @@ func expandArray(js *jsonArray, batch bool, limit int) {
 		// Always batch primitive values together.
 		isPrim := isPrimitive(js.elems[i-1].val) && isPrimitive(js.elems[i].val)
 		prevLen, _ := lineLength(-1, js.elems[:i])
-		nextLen, _ := lineLength(-1, js.elems[i:][:1])
+		nextLen, _ := lineLength(+1, js.elems[i:][:1])
 		if !(batch || isPrim) || (prevLen+nextLen) > limit {
 			js.elems[i-1].postComma = appendNewline(js.elems[i-1].postComma)
 		}
