@@ -21,6 +21,7 @@ Run the command:
 | [bufpipe](http://godoc.org/github.com/dsnet/golib/bufpipe) | Package bufpipe implements a buffered pipe. |
 | [cron](http://godoc.org/github.com/dsnet/golib/cron) | Package cron parses and runs cron schedules. |
 | [hashmerge](http://godoc.org/github.com/dsnet/golib/hashmerge) | Package hashmerge merges hash checksums. |
+| [jsoncs](http://godoc.org/github.com/dsnet/golib/jsonfmt) | Package jsoncs implements JSON Canonicalization Scheme (JCS) as specified in RFC 8785. |
 | [jsonfmt](http://godoc.org/github.com/dsnet/golib/jsonfmt) | Package jsonfmt implements a JSON formatter. |
 | [memfile](http://godoc.org/github.com/dsnet/golib/memfile) | Package memfile implements an in-memory emulation of os.File. |
 | [unitconv](http://godoc.org/github.com/dsnet/golib/unitconv) | Package unitconv implements string conversion functionality for unit prefixes. |
