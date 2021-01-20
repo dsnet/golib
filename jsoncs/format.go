@@ -17,23 +17,6 @@ import (
 	"unicode/utf8"
 )
 
-// Marshal canonically marshals the input value.
-//
-// The value may be one of the following Go types:
-//	• nil                    // JSON null
-//	• bool                   // JSON boolean
-//	• float64                // JSON number
-//	• string                 // JSON string
-//	• []interface{}          // JSON array
-//	• map[string]interface{} // JSON object
-// The allowed types for interface{} may be any of the supportetd Go types.
-//
-// It returns an error if provided a Go type that is not supported,
-// a string with invalid UTF-8, or a float64 with a NaN or infinite value.
-func Marshal(v interface{}) ([]byte, error) {
-	return formatValue(nil, v)
-}
-
 // Format transform the JSON input to its canonical form.
 // The input must comply with RFC 7493.
 // It reuses the provided input buffer.
