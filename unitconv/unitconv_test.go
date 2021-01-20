@@ -273,8 +273,8 @@ func TestParsePrefix(t *testing.T) {
 		{"123K", AutoParse, 123 * Kilo, nil},
 		{"3Mi", AutoParse, 3 * Mebi, nil},
 		{"3M", AutoParse, 3 * Mega, nil},
-		{"3E-3", AutoParse, 3E-3, nil},
-		{"2E2", AutoParse, 2E2, nil},
+		{"3E-3", AutoParse, 3e-3, nil},
+		{"2E2", AutoParse, 2e2, nil},
 	}
 
 	for _, tt := range tests {

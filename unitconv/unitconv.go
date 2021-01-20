@@ -93,25 +93,25 @@ const (
 
 // Prefix factors according to SI standards.
 const (
-	Yocto = 1E-24
-	Zepto = 1E-21
-	Atto  = 1E-18
-	Femto = 1E-15
-	Pico  = 1E-12
-	Nano  = 1E-9
-	Micro = 1E-6
-	Milli = 1E-3
+	Yocto = 1e-24
+	Zepto = 1e-21
+	Atto  = 1e-18
+	Femto = 1e-15
+	Pico  = 1e-12
+	Nano  = 1e-9
+	Micro = 1e-6
+	Milli = 1e-3
 
-	Unit = 1E0 // Not a standard SI prefix.
+	Unit = 1e0 // Not a standard SI prefix.
 
-	Kilo  = 1E+3
-	Mega  = 1E+6
-	Giga  = 1E+9
-	Tera  = 1E+12
-	Peta  = 1E+15
-	Exa   = 1E+18
-	Zetta = 1E+21
-	Yotta = 1E+24
+	Kilo  = 1e+3
+	Mega  = 1e+6
+	Giga  = 1e+9
+	Tera  = 1e+12
+	Peta  = 1e+15
+	Exa   = 1e+18
+	Zetta = 1e+21
+	Yotta = 1e+24
 )
 
 const (
