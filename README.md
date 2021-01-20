@@ -9,6 +9,9 @@ are pulled out and placed here.
 
 ## Packages ##
 
+Each top-level package is a sub-module so that the individual packages
+can be versioned separately from each other.
+
 | Package | Description |
 | :------ | :---------- |
 | [bufpipe](https://pkg.go.dev/github.com/dsnet/golib/bufpipe) | Package bufpipe implements a buffered pipe. |
