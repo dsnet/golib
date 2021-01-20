@@ -17,7 +17,7 @@ import (
 	"unicode/utf8"
 )
 
-// Format transform the JSON input to its canonical form.
+// Format transforms the JSON input to its canonical form.
 // The input must comply with RFC 7493.
 // It reuses the provided input buffer.
 func Format(b []byte) ([]byte, error) {
