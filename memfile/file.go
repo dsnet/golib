@@ -12,13 +12,15 @@ import (
 )
 
 var errInvalid = errors.New("invalid argument")
+var errAlreadyClosed = errors.New("already closed")
 
 // File is an in-memory emulation of the I/O operations of os.File.
 // The zero value for File is an empty file ready to use.
 type File struct {
-	m sync.Mutex
-	b []byte
-	i int
+	m      sync.Mutex
+	b      []byte
+	i      int
+	closed bool
 }
 
 // New creates and initializes a new File using b as its initial contents.
@@ -34,6 +36,10 @@ func (fb *File) Read(b []byte) (int, error) {
 	fb.m.Lock()
 	defer fb.m.Unlock()
 
+	if fb.closed {
+		return 0, errAlreadyClosed
+	}
+
 	n, err := fb.readAt(b, int64(fb.i))
 	fb.i += n
 	return n, err
@@ -45,6 +51,11 @@ func (fb *File) Read(b []byte) (int, error) {
 func (fb *File) ReadAt(b []byte, offset int64) (int, error) {
 	fb.m.Lock()
 	defer fb.m.Unlock()
+
+	if fb.closed {
+		return 0, errAlreadyClosed
+	}
+
 	return fb.readAt(b, offset)
 }
 func (fb *File) readAt(b []byte, off int64) (int, error) {
@@ -69,6 +80,10 @@ func (fb *File) Write(b []byte) (int, error) {
 	fb.m.Lock()
 	defer fb.m.Unlock()
 
+	if fb.closed {
+		return 0, errAlreadyClosed
+	}
+
 	n, err := fb.writeAt(b, int64(fb.i))
 	fb.i += n
 	return n, err
@@ -81,6 +96,11 @@ func (fb *File) Write(b []byte) (int, error) {
 func (fb *File) WriteAt(b []byte, offset int64) (int, error) {
 	fb.m.Lock()
 	defer fb.m.Unlock()
+
+	if fb.closed {
+		return 0, errAlreadyClosed
+	}
+
 	return fb.writeAt(b, offset)
 }
 func (fb *File) writeAt(b []byte, off int64) (int, error) {
@@ -101,6 +121,10 @@ func (fb *File) writeAt(b []byte, off int64) (int, error) {
 func (fb *File) Seek(offset int64, whence int) (int64, error) {
 	fb.m.Lock()
 	defer fb.m.Unlock()
+
+	if fb.closed {
+		return 0, errAlreadyClosed
+	}
 
 	var abs int64
 	switch whence {
@@ -124,6 +148,10 @@ func (fb *File) Seek(offset int64, whence int) (int64, error) {
 func (fb *File) Truncate(n int64) error {
 	fb.m.Lock()
 	defer fb.m.Unlock()
+
+	if fb.closed {
+		return errAlreadyClosed
+	}
 	return fb.truncate(n)
 }
 func (fb *File) truncate(n int64) error {
@@ -145,4 +173,14 @@ func (fb *File) Bytes() []byte {
 	fb.m.Lock()
 	defer fb.m.Unlock()
 	return fb.b
+}
+
+func (fb *File) Close() error {
+	fb.m.Lock()
+	defer fb.m.Unlock()
+	if fb.closed {
+		return errAlreadyClosed
+	}
+	fb.closed = true
+	return nil
 }
