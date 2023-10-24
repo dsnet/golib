@@ -199,3 +199,13 @@ func readFull(r io.Reader, b []byte) (n int, err error) {
 	}
 	return len(b0) - len(b), err
 }
+
+func TestClose(t *testing.T) {
+	f := New([]byte{12})
+	if err := f.Close(); err != nil {
+		t.Fatalf("Error on first close")
+	}
+	if err := f.Close(); err == nil {
+		t.Fatalf("No error on subsequent close")
+	}
+}
